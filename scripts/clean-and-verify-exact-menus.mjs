@@ -318,10 +318,11 @@ async function main() {
     const dest = path.join(MENUS_DIR, `${place.id}.jpg`);
     const candidates = await verifyExistingOrFetchExactMenu(place, exactName);
     for (const c of candidates) {
-      const urls = [c.turlFull, c.murl].filter(Boolean);
+      // Download full-resolution original `c.murl` FIRST so menu text and prices are sharp and readable!
+      const urls = [c.murl, c.turlFull].filter(Boolean);
       let saved = false;
       for (const u of urls) {
-        const buf = await fetchImageBuffer(u, 18000);
+        const buf = await fetchImageBuffer(u, 22000);
         if (!buf) continue;
         const h = crypto.createHash("md5").update(buf).digest("hex");
         if (usedHashes.has(h)) continue;

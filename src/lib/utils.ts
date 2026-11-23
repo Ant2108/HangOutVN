@@ -121,7 +121,12 @@ export function getPlaceOpenStatus(
   const raw = openingHours.trim();
   const lower = raw.toLowerCase();
 
-  if (lower.includes("24/7") || lower.includes("24h") || lower.includes("cả ngày")) {
+  if (
+    lower.includes("24/7") ||
+    lower.includes("24/24") ||
+    lower.includes("cả ngày") ||
+    /^mở\s*24h$/i.test(lower)
+  ) {
     return {
       isOpen: true,
       isClosingSoon: false,
@@ -152,7 +157,7 @@ export function getPlaceOpenStatus(
   // Strip parenthetical notes before extracting main opening spans
   const cleaned = raw.replace(/\([^)]*\)/g, " ");
   const spanRegex =
-    /(\d{1,2})(?:[:h](\d{2}))?\s*[-–~]\s*(\d{1,2})(?:[:h](\d{2}))?/gi;
+    /(\d{1,2})(?:[:h](\d{2})|h)?\s*[-–~]\s*(\d{1,2})(?:[:h](\d{2})|h)?/gi;
 
   const spans: { open: number; close: number }[] = [];
   let match: RegExpExecArray | null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   BookOpen,
@@ -22,6 +22,12 @@ import type {
 } from "@/lib/types";
 import { buildSearchIndex, filterAndSortPlaces } from "@/lib/search";
 import { BUDGET_OPTIONS, cn, getPlaceOpenStatus } from "@/lib/utils";
+import {
+  readPersistedState,
+  useIsClient,
+  usePersistedFilterStore,
+  useScrollPreservation,
+} from "@/lib/filterPersistence";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -29,6 +35,15 @@ import { Sheet } from "@/components/ui/sheet";
 import { PlaceCard } from "@/components/places/PlaceCard";
 
 const PAGE_SIZE = 24;
+const EXPLORE_STORAGE_KEY = "hangout:explore:v1";
+
+const VALID_SORTS: SortOption[] = [
+  "featured",
+  "price-asc",
+  "price-desc",
+  "name-asc",
+  "name-desc",
+];
 
 const DEFAULT_FILTERS: ExploreFilters = {
   query: "",
@@ -41,6 +56,33 @@ const DEFAULT_FILTERS: ExploreFilters = {
   onlyOpenNow: false,
   sort: "featured",
 };
+
+interface PersistedExploreState {
+  filters: ExploreFilters;
+  visibleCount: number;
+}
+
+const SERVER_DEFAULT_EXPLORE: PersistedExploreState = {
+  filters: DEFAULT_FILTERS,
+  visibleCount: PAGE_SIZE,
+};
+
+function serializeExploreToParams(state: PersistedExploreState): URLSearchParams {
+  const params = new URLSearchParams();
+  const { filters } = state;
+  if (filters.query.trim()) params.set("q", filters.query.trim());
+  if (filters.province !== "all") params.set("province", filters.province);
+  if (filters.province !== "all" && filters.district !== "all") {
+    params.set("district", filters.district);
+  }
+  if (filters.category !== "all") params.set("category", filters.category);
+  if (filters.budget !== "all") params.set("budget", filters.budget);
+  if (filters.vibe !== "all") params.set("vibe", filters.vibe);
+  if (filters.onlyWithMenu) params.set("menu", "1");
+  if (filters.onlyOpenNow) params.set("open", "1");
+  if (filters.sort !== "featured") params.set("sort", filters.sort);
+  return params;
+}
 
 interface ExploreClientProps {
   places: Place[];
@@ -56,33 +98,111 @@ export function ExploreClient({
   vibes,
 }: ExploreClientProps) {
   const searchParams = useSearchParams();
-  const [filters, setFilters] = useState<ExploreFilters>(() => {
-    const q = searchParams.get("q") || "";
-    const prov = searchParams.get("province") || "all";
-    const dist = searchParams.get("district") || "all";
-    const cat = (searchParams.get("category") as CategoryId | null) || "all";
-    const budget = (searchParams.get("budget") as BudgetBucket | null) || "all";
-    const vibe = searchParams.get("vibe") || "all";
-    const validProv = provinces.some((p) => p.name === prov) ? prov : "all";
+  const urlKey = searchParams.toString();
+  const isClient = useIsClient();
 
-    return {
-      ...DEFAULT_FILTERS,
-      query: q,
-      province: validProv,
-      district: validProv !== "all" ? dist : "all",
-      category: categories.some((c) => c.id === cat) ? cat : "all",
-      budget: BUDGET_OPTIONS.some((b) => b.value === budget) ? budget : "all",
-      vibe: vibes.includes(vibe) ? vibe : "all",
-    };
-  });
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const resolveClientState = useCallback((): PersistedExploreState => {
+    const saved = readPersistedState<PersistedExploreState>(EXPLORE_STORAGE_KEY);
+    const params =
+      typeof window !== "undefined" && window.location.search
+        ? new URLSearchParams(window.location.search)
+        : new URLSearchParams(urlKey);
+
+    const hasUrlFilter = [
+      "q",
+      "province",
+      "district",
+      "category",
+      "budget",
+      "vibe",
+      "menu",
+      "open",
+      "sort",
+    ].some((k) => params.has(k));
+
+    if (hasUrlFilter) {
+      const q = params.get("q") || "";
+      const prov = params.get("province") || "all";
+      const dist = params.get("district") || "all";
+      const cat = (params.get("category") as CategoryId | null) || "all";
+      const budget = (params.get("budget") as BudgetBucket | null) || "all";
+      const vibe = params.get("vibe") || "all";
+      const sortParam = (params.get("sort") as SortOption | null) || "featured";
+      const validProv = provinces.some((p) => p.name === prov) ? prov : "all";
+
+      const urlFilters: ExploreFilters = {
+        ...DEFAULT_FILTERS,
+        query: q,
+        province: validProv,
+        district: validProv !== "all" ? dist : "all",
+        category: categories.some((c) => c.id === cat) ? cat : "all",
+        budget: BUDGET_OPTIONS.some((b) => b.value === budget) ? budget : "all",
+        vibe: vibes.includes(vibe) ? vibe : "all",
+        onlyWithMenu: params.get("menu") === "1",
+        onlyOpenNow: params.get("open") === "1",
+        sort: VALID_SORTS.includes(sortParam) ? sortParam : "featured",
+      };
+
+      const sameAsSaved =
+        saved && JSON.stringify(saved.filters) === JSON.stringify(urlFilters);
+
+      return {
+        filters: urlFilters,
+        visibleCount:
+          sameAsSaved && typeof saved.visibleCount === "number" && saved.visibleCount >= PAGE_SIZE
+            ? saved.visibleCount
+            : PAGE_SIZE,
+      };
+    }
+
+    if (saved && saved.filters) {
+      const validProv = provinces.some((p) => p.name === saved.filters.province)
+        ? saved.filters.province
+        : "all";
+      return {
+        filters: {
+          ...DEFAULT_FILTERS,
+          ...saved.filters,
+          province: validProv,
+          district: validProv !== "all" ? saved.filters.district || "all" : "all",
+          category: categories.some((c) => c.id === saved.filters.category)
+            ? saved.filters.category
+            : "all",
+          budget: BUDGET_OPTIONS.some((b) => b.value === saved.filters.budget)
+            ? saved.filters.budget
+            : "all",
+          vibe: vibes.includes(saved.filters.vibe) ? saved.filters.vibe : "all",
+          sort: VALID_SORTS.includes(saved.filters.sort) ? saved.filters.sort : "featured",
+        },
+        visibleCount:
+          typeof saved.visibleCount === "number" && saved.visibleCount >= PAGE_SIZE
+            ? saved.visibleCount
+            : PAGE_SIZE,
+      };
+    }
+
+    return SERVER_DEFAULT_EXPLORE;
+  }, [urlKey, provinces, categories, vibes]);
+
+  const [exploreState, setExploreState, resetExploreState] =
+    usePersistedFilterStore<PersistedExploreState>({
+      storageKey: EXPLORE_STORAGE_KEY,
+      urlKey,
+      serverDefault: SERVER_DEFAULT_EXPLORE,
+      resolveClientState,
+      serializeToUrlParams: serializeExploreToParams,
+    });
+
+  useScrollPreservation(EXPLORE_STORAGE_KEY, isClient);
+
+  const { filters, visibleCount } = exploreState;
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const indexed = useMemo(() => buildSearchIndex(places), [places]);
 
   const results = useMemo(
-    () => filterAndSortPlaces(indexed, filters),
-    [indexed, filters]
+    () => filterAndSortPlaces(indexed, filters, isClient ? new Date() : null),
+    [indexed, filters, isClient]
   );
 
   const visiblePlaces = useMemo(
@@ -119,30 +239,31 @@ export function ExploreClient({
     [places]
   );
 
-  const openNowPlaceCount = useMemo(
-    () =>
-      places.filter((p) => {
-        const st = getPlaceOpenStatus(p.openingHours);
-        return st !== null && st.isOpen;
-      }).length,
-    [places]
-  );
+  const closedNowPlaceCount = useMemo(() => {
+    if (!isClient) return 0;
+    const now = new Date();
+    return places.filter((p) => {
+      const st = getPlaceOpenStatus(p.openingHours, now);
+      return st !== null && !st.isOpen;
+    }).length;
+  }, [places, isClient]);
 
   const updateFilter = <K extends keyof ExploreFilters>(
     key: K,
     value: ExploreFilters[K]
   ) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value,
-      ...(key === "province" ? { district: "all" } : {}),
+    setExploreState((prev) => ({
+      filters: {
+        ...prev.filters,
+        [key]: value,
+        ...(key === "province" ? { district: "all" } : {}),
+      },
+      visibleCount: PAGE_SIZE,
     }));
-    setVisibleCount(PAGE_SIZE);
   };
 
   const resetFilters = () => {
-    setFilters(DEFAULT_FILTERS);
-    setVisibleCount(PAGE_SIZE);
+    resetExploreState(SERVER_DEFAULT_EXPLORE);
   };
 
   const renderFilterControls = () => (
@@ -210,9 +331,11 @@ export function ExploreClient({
             <Clock className="h-4 w-4 text-[#1E5631]" aria-hidden="true" />
             Ẩn quán đã đóng cửa
           </span>
-          <span className="rounded-full bg-white/85 px-2 py-0.5 text-[11px] font-extrabold text-[#1E5631]">
-            {openNowPlaceCount} mở
-          </span>
+          {isClient && closedNowPlaceCount > 0 && (
+            <span className="rounded-full bg-white/85 px-2 py-0.5 text-[11px] font-extrabold text-[#B83B14]">
+              {closedNowPlaceCount} đóng
+            </span>
+          )}
         </button>
 
         <button
@@ -542,7 +665,12 @@ export function ExploreClient({
                     type="button"
                     variant="dark"
                     size="lg"
-                    onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+                    onClick={() =>
+                      setExploreState((prev) => ({
+                        ...prev,
+                        visibleCount: prev.visibleCount + PAGE_SIZE,
+                      }))
+                    }
                   >
                     Tải thêm địa điểm (+{Math.min(PAGE_SIZE, results.length - visibleCount)})
                   </Button>

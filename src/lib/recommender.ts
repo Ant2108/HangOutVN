@@ -68,13 +68,14 @@ function matchesCompanion(place: Place, companion: CompanionType): boolean {
 export function getMatchingRecommendationPool(
   places: Place[],
   input: RecommendationInput,
-  now?: Date
+  now?: Date | null
 ): Place[] {
-  const refTime = now ?? new Date();
+  const refTime = now === undefined ? new Date() : now;
   return places.filter((place) => {
-    if (input.onlyOpenNow) {
+    if (input.onlyOpenNow && refTime) {
       const status = getPlaceOpenStatus(place.openingHours, refTime);
-      if (!status || !status.isOpen) return false;
+      // Exclude places confirmed closed on Google Maps right now
+      if (status !== null && !status.isOpen) return false;
     }
     if (input.province !== "all" && place.province !== input.province) {
       return false;
@@ -101,22 +102,18 @@ export function getMatchingRecommendationPool(
   });
 }
 
-export function pickRandomRecommendation(
-  places: Place[],
+export function buildRecommendationResult(
+  chosen: Place,
   input: RecommendationInput,
-  excludeId?: string
-): RecommendationResult | null {
-  const pool = getMatchingRecommendationPool(places, input);
-  if (pool.length === 0) return null;
-
-  const candidates = pool.length > 1 && excludeId ? pool.filter((p) => p.id !== excludeId) : pool;
-  const chosen = candidates[Math.floor(Math.random() * candidates.length)];
-
+  matchCount: number,
+  now?: Date | null
+): RecommendationResult {
+  const refTime = now === undefined ? new Date() : now;
   const reasons: string[] = [];
-  const openStatus = getPlaceOpenStatus(chosen.openingHours);
+  const openStatus = refTime ? getPlaceOpenStatus(chosen.openingHours, refTime) : null;
   if (openStatus && openStatus.isOpen) {
     reasons.push(
-      `Đang mở cửa ngay lúc này (${openStatus.detail.toLowerCase()})`
+      `Đang mở cửa theo Google Maps (${openStatus.detail.toLowerCase()})`
     );
   }
   if (input.province !== "all") {
@@ -149,6 +146,35 @@ export function pickRandomRecommendation(
   return {
     place: chosen,
     reasons,
-    matchCount: pool.length,
+    matchCount,
   };
+}
+
+export function pickRandomRecommendation(
+  places: Place[],
+  input: RecommendationInput,
+  excludeId?: string,
+  now?: Date
+): RecommendationResult | null {
+  const refTime = now ?? new Date();
+  const pool = getMatchingRecommendationPool(places, input, refTime);
+  if (pool.length === 0) return null;
+
+  const baseCandidates =
+    pool.length > 1 && excludeId ? pool.filter((p) => p.id !== excludeId) : pool;
+
+  // When filtering open places, prefer venues verified open on Google Maps if available
+  let candidates = baseCandidates;
+  if (input.onlyOpenNow) {
+    const confirmedOpen = baseCandidates.filter((p) => {
+      const st = getPlaceOpenStatus(p.openingHours, refTime);
+      return st !== null && st.isOpen;
+    });
+    if (confirmedOpen.length > 0) {
+      candidates = confirmedOpen;
+    }
+  }
+
+  const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+  return buildRecommendationResult(chosen, input, pool.length, refTime);
 }

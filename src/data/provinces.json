@@ -6,7 +6,7 @@
     "region": "Trung du & Miền núi phía Bắc",
     "mergedFrom": "Hà Giang + Tuyên Quang",
     "placeCount": 4,
-    "avgPricePerPerson": 85833
+    "avgPricePerPerson": 86000
   },
   {
     "code": 2,
@@ -15,7 +15,7 @@
     "region": "Trung du & Miền núi phía Bắc",
     "mergedFrom": "Cao Bằng (giữ nguyên)",
     "placeCount": 4,
-    "avgPricePerPerson": 84167
+    "avgPricePerPerson": 84000
   },
   {
     "code": 3,
@@ -24,7 +24,7 @@
     "region": "Trung du & Miền núi phía Bắc",
     "mergedFrom": "Lai Châu (giữ nguyên)",
     "placeCount": 4,
-    "avgPricePerPerson": 95833
+    "avgPricePerPerson": 96000
   },
   {
     "code": 4,
@@ -33,7 +33,7 @@
     "region": "Trung du & Miền núi phía Bắc",
     "mergedFrom": "Lào Cai + Yên Bái",
     "placeCount": 4,
-    "avgPricePerPerson": 115833
+    "avgPricePerPerson": 116000
   },
   {
     "code": 5,
@@ -42,7 +42,7 @@
     "region": "Trung du & Miền núi phía Bắc",
     "mergedFrom": "Bắc Kạn + Thái Nguyên",
     "placeCount": 4,
-    "avgPricePerPerson": 98333
+    "avgPricePerPerson": 98000
   },
   {
     "code": 6,
@@ -51,7 +51,7 @@
     "region": "Trung du & Miền núi phía Bắc",
     "mergedFrom": "Điện Biên (giữ nguyên)",
     "placeCount": 4,
-    "avgPricePerPerson": 94167
+    "avgPricePerPerson": 94000
   },
   {
     "code": 7,
@@ -60,7 +60,7 @@
     "region": "Trung du & Miền núi phía Bắc",
     "mergedFrom": "Lạng Sơn (giữ nguyên)",
     "placeCount": 4,
-    "avgPricePerPerson": 118750
+    "avgPricePerPerson": 119000
   },
   {
     "code": 8,
@@ -69,7 +69,7 @@
     "region": "Trung du & Miền núi phía Bắc",
     "mergedFrom": "Sơn La (giữ nguyên)",
     "placeCount": 4,
-    "avgPricePerPerson": 91667
+    "avgPricePerPerson": 92000
   },
   {
     "code": 9,
@@ -78,7 +78,7 @@
     "region": "Trung du & Miền núi phía Bắc",
     "mergedFrom": "Hòa Bình + Vĩnh Phúc + Phú Thọ",
     "placeCount": 4,
-    "avgPricePerPerson": 66667
+    "avgPricePerPerson": 67000
   },
   {
     "code": 10,
@@ -87,7 +87,7 @@
     "region": "Đồng bằng sông Hồng",
     "mergedFrom": "Bắc Giang + Bắc Ninh",
     "placeCount": 4,
-    "avgPricePerPerson": 102083
+    "avgPricePerPerson": 102000
   },
   {
     "code": 11,
@@ -96,7 +96,7 @@
     "region": "Đồng bằng sông Hồng",
     "mergedFrom": "Quảng Ninh (giữ nguyên)",
     "placeCount": 4,
-    "avgPricePerPerson": 110833
+    "avgPricePerPerson": 111000
   },
   {
     "code": 12,
@@ -104,8 +104,8 @@
     "name": "TP. Hà Nội",
     "region": "Đồng bằng sông Hồng",
     "mergedFrom": "Hà Nội (giữ nguyên)",
-    "placeCount": 373,
-    "avgPricePerPerson": 61376
+    "placeCount": 368,
+    "avgPricePerPerson": 62000
   },
   {
     "code": 13,
@@ -114,7 +114,7 @@
     "region": "Đồng bằng sông Hồng",
     "mergedFrom": "Hải Dương + TP. Hải Phòng",
     "placeCount": 7,
-    "avgPricePerPerson": 71875
+    "avgPricePerPerson": 72000
   },
   {
     "code": 14,
@@ -141,7 +141,7 @@
     "region": "Bắc Trung Bộ & Duyên hải miền Trung",
     "mergedFrom": "Thanh Hóa (giữ nguyên)",
     "placeCount": 4,
-    "avgPricePerPerson": 120833
+    "avgPricePerPerson": 121000
   },
   {
     "code": 17,
@@ -150,7 +150,7 @@
     "region": "Bắc Trung Bộ & Duyên hải miền Trung",
     "mergedFrom": "Nghệ An (giữ nguyên)",
     "placeCount": 4,
-    "avgPricePerPerson": 107500
+    "avgPricePerPerson": 108000
   },
   {
     "code": 18,
@@ -159,7 +159,7 @@
     "region": "Bắc Trung Bộ & Duyên hải miền Trung",
     "mergedFrom": "Hà Tĩnh (giữ nguyên)",
     "placeCount": 4,
-    "avgPricePerPerson": 136667
+    "avgPricePerPerson": 137000
   },
   {
     "code": 19,
@@ -168,7 +168,7 @@
     "region": "Bắc Trung Bộ & Duyên hải miền Trung",
     "mergedFrom": "Quảng Bình + Quảng Trị",
     "placeCount": 4,
-    "avgPricePerPerson": 86667
+    "avgPricePerPerson": 87000
   },
   {
     "code": 20,
@@ -177,7 +177,7 @@
     "region": "Bắc Trung Bộ & Duyên hải miền Trung",
     "mergedFrom": "Huế (giữ nguyên)",
     "placeCount": 7,
-    "avgPricePerPerson": 89167
+    "avgPricePerPerson": 89000
   },
   {
     "code": 21,
@@ -186,7 +186,7 @@
     "region": "Bắc Trung Bộ & Duyên hải miền Trung",
     "mergedFrom": "Quảng Nam + TP. Đà Nẵng",
     "placeCount": 174,
-    "avgPricePerPerson": 71637
+    "avgPricePerPerson": 65000
   },
   {
     "code": 22,
@@ -195,7 +195,7 @@
     "region": "Bắc Trung Bộ & Duyên hải miền Trung",
     "mergedFrom": "Quảng Ngãi + Kon Tum",
     "placeCount": 4,
-    "avgPricePerPerson": 80833
+    "avgPricePerPerson": 81000
   },
   {
     "code": 23,
@@ -204,7 +204,7 @@
     "region": "Tây Nguyên",
     "mergedFrom": "Gia Lai + Bình Định",
     "placeCount": 4,
-    "avgPricePerPerson": 45833
+    "avgPricePerPerson": 46000
   },
   {
     "code": 24,
@@ -213,7 +213,7 @@
     "region": "Tây Nguyên",
     "mergedFrom": "Phú Yên + Đắk Lắk",
     "placeCount": 4,
-    "avgPricePerPerson": 130833
+    "avgPricePerPerson": 131000
   },
   {
     "code": 25,
@@ -222,7 +222,7 @@
     "region": "Bắc Trung Bộ & Duyên hải miền Trung",
     "mergedFrom": "Khánh Hòa + Ninh Thuận",
     "placeCount": 6,
-    "avgPricePerPerson": 93500
+    "avgPricePerPerson": 94000
   },
   {
     "code": 26,
@@ -231,7 +231,7 @@
     "region": "Tây Nguyên",
     "mergedFrom": "Đắk Nông + Lâm Đồng + Bình Thuận",
     "placeCount": 8,
-    "avgPricePerPerson": 78571
+    "avgPricePerPerson": 79000
   },
   {
     "code": 27,
@@ -249,7 +249,7 @@
     "region": "Đông Nam Bộ",
     "mergedFrom": "Long An + Tây Ninh",
     "placeCount": 6,
-    "avgPricePerPerson": 78500
+    "avgPricePerPerson": 79000
   },
   {
     "code": 29,
@@ -257,8 +257,8 @@
     "name": "TP. Hồ Chí Minh",
     "region": "Đông Nam Bộ",
     "mergedFrom": "Bình Dương + TP.HCM + Bà Rịa - Vũng Tàu",
-    "placeCount": 838,
-    "avgPricePerPerson": 51297
+    "placeCount": 822,
+    "avgPricePerPerson": 51000
   },
   {
     "code": 30,
@@ -266,8 +266,8 @@
     "name": "Đồng Tháp",
     "region": "Đồng bằng sông Cửu Long",
     "mergedFrom": "Tiền Giang + Đồng Tháp",
-    "placeCount": 6,
-    "avgPricePerPerson": 79000
+    "placeCount": 7,
+    "avgPricePerPerson": 74000
   },
   {
     "code": 31,
@@ -285,7 +285,7 @@
     "region": "Đồng bằng sông Cửu Long",
     "mergedFrom": "Bến Tre + Vĩnh Long + Trà Vinh",
     "placeCount": 4,
-    "avgPricePerPerson": 52500
+    "avgPricePerPerson": 53000
   },
   {
     "code": 33,
@@ -294,7 +294,7 @@
     "region": "Đồng bằng sông Cửu Long",
     "mergedFrom": "Sóc Trăng + Hậu Giang + TP. Cần Thơ",
     "placeCount": 7,
-    "avgPricePerPerson": 69167
+    "avgPricePerPerson": 69000
   },
   {
     "code": 34,
@@ -303,6 +303,6 @@
     "region": "Đồng bằng sông Cửu Long",
     "mergedFrom": "Bạc Liêu + Cà Mau",
     "placeCount": 4,
-    "avgPricePerPerson": 37500
+    "avgPricePerPerson": 38000
   }
 ]

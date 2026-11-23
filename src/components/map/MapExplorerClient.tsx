@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import {
   ArrowUpRight,
   ExternalLink,
@@ -18,10 +18,44 @@ import {
   getPricePerPerson,
   removeVietnameseTones,
 } from "@/lib/utils";
+import {
+  readPersistedState,
+  useIsClient,
+  usePersistedFilterStore,
+  useScrollPreservation,
+} from "@/lib/filterPersistence";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 const PAGE_SIZE = 30;
+const MAP_STORAGE_KEY = "hangout:map:v1";
+
+interface PersistedMapState {
+  selectedRegion: string;
+  selectedProvince: string;
+  selectedDistrict: string;
+  query: string;
+  visibleCount: number;
+}
+
+const SERVER_DEFAULT_MAP: PersistedMapState = {
+  selectedRegion: "all",
+  selectedProvince: "all",
+  selectedDistrict: "all",
+  query: "",
+  visibleCount: PAGE_SIZE,
+};
+
+function serializeMapToParams(state: PersistedMapState): URLSearchParams {
+  const params = new URLSearchParams();
+  if (state.selectedRegion !== "all") params.set("region", state.selectedRegion);
+  if (state.selectedProvince !== "all") params.set("province", state.selectedProvince);
+  if (state.selectedProvince !== "all" && state.selectedDistrict !== "all") {
+    params.set("district", state.selectedDistrict);
+  }
+  if (state.query.trim()) params.set("q", state.query.trim());
+  return params;
+}
 
 interface MapExplorerClientProps {
   places: Place[];
@@ -34,11 +68,85 @@ export function MapExplorerClient({
   provinces,
   regions,
 }: MapExplorerClientProps) {
-  const [selectedRegion, setSelectedRegion] = useState<string>("all");
-  const [selectedProvince, setSelectedProvince] = useState<string>("all");
-  const [selectedDistrict, setSelectedDistrict] = useState<string>("all");
-  const [query, setQuery] = useState("");
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const isClient = useIsClient();
+
+  const resolveClientState = useCallback((): PersistedMapState => {
+    const saved = readPersistedState<PersistedMapState>(MAP_STORAGE_KEY);
+    const params =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search)
+        : new URLSearchParams();
+
+    const hasUrlFilter = ["region", "province", "district", "q"].some((k) =>
+      params.has(k)
+    );
+
+    if (hasUrlFilter) {
+      const reg = params.get("region") || "all";
+      const prov = params.get("province") || "all";
+      const validReg = regions.includes(reg) ? reg : "all";
+      const validProv = provinces.some((p) => p.name === prov) ? prov : "all";
+      const dist = validProv !== "all" ? params.get("district") || "all" : "all";
+      const q = params.get("q") || "";
+
+      const sameAsSaved =
+        saved &&
+        saved.selectedRegion === validReg &&
+        saved.selectedProvince === validProv &&
+        saved.selectedDistrict === dist &&
+        saved.query === q;
+
+      return {
+        selectedRegion: validReg,
+        selectedProvince: validProv,
+        selectedDistrict: dist,
+        query: q,
+        visibleCount:
+          sameAsSaved && typeof saved.visibleCount === "number" && saved.visibleCount >= PAGE_SIZE
+            ? saved.visibleCount
+            : PAGE_SIZE,
+      };
+    }
+
+    if (saved) {
+      const validReg = regions.includes(saved.selectedRegion)
+        ? saved.selectedRegion
+        : "all";
+      const validProv = provinces.some((p) => p.name === saved.selectedProvince)
+        ? saved.selectedProvince
+        : "all";
+      return {
+        selectedRegion: validReg,
+        selectedProvince: validProv,
+        selectedDistrict: validProv !== "all" ? saved.selectedDistrict || "all" : "all",
+        query: saved.query || "",
+        visibleCount:
+          typeof saved.visibleCount === "number" && saved.visibleCount >= PAGE_SIZE
+            ? saved.visibleCount
+            : PAGE_SIZE,
+      };
+    }
+
+    return SERVER_DEFAULT_MAP;
+  }, [provinces, regions]);
+
+  const [mapState, setMapState] = usePersistedFilterStore<PersistedMapState>({
+    storageKey: MAP_STORAGE_KEY,
+    urlKey: "",
+    serverDefault: SERVER_DEFAULT_MAP,
+    resolveClientState,
+    serializeToUrlParams: serializeMapToParams,
+  });
+
+  useScrollPreservation(MAP_STORAGE_KEY, isClient);
+
+  const {
+    selectedRegion,
+    selectedProvince,
+    selectedDistrict,
+    query,
+    visibleCount,
+  } = mapState;
 
   const visibleProvinces = useMemo(() => {
     if (selectedRegion === "all") return provinces;
@@ -100,12 +208,15 @@ export function MapExplorerClient({
       <div className="mt-6 flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={() => {
-            setSelectedRegion("all");
-            setSelectedProvince("all");
-            setSelectedDistrict("all");
-            setVisibleCount(PAGE_SIZE);
-          }}
+          onClick={() =>
+            setMapState((prev) => ({
+              ...prev,
+              selectedRegion: "all",
+              selectedProvince: "all",
+              selectedDistrict: "all",
+              visibleCount: PAGE_SIZE,
+            }))
+          }
           className={cn(
             "min-h-[38px] rounded-full border px-4 py-1.5 text-xs font-bold cursor-pointer transition-colors",
             selectedRegion === "all"
@@ -119,12 +230,15 @@ export function MapExplorerClient({
           <button
             key={region}
             type="button"
-            onClick={() => {
-              setSelectedRegion(region);
-              setSelectedProvince("all");
-              setSelectedDistrict("all");
-              setVisibleCount(PAGE_SIZE);
-            }}
+            onClick={() =>
+              setMapState((prev) => ({
+                ...prev,
+                selectedRegion: region,
+                selectedProvince: "all",
+                selectedDistrict: "all",
+                visibleCount: PAGE_SIZE,
+              }))
+            }
             className={cn(
               "min-h-[38px] rounded-full border px-4 py-1.5 text-xs font-bold cursor-pointer transition-colors",
               selectedRegion === region
@@ -146,10 +260,14 @@ export function MapExplorerClient({
           {selectedProvince !== "all" && (
             <button
               type="button"
-              onClick={() => {
-                setSelectedProvince("all");
-                setVisibleCount(PAGE_SIZE);
-              }}
+              onClick={() =>
+                setMapState((prev) => ({
+                  ...prev,
+                  selectedProvince: "all",
+                  selectedDistrict: "all",
+                  visibleCount: PAGE_SIZE,
+                }))
+              }
               className="text-xs font-bold text-[#D84B20] hover:underline cursor-pointer"
             >
               Xem tất cả tỉnh trong vùng
@@ -163,11 +281,14 @@ export function MapExplorerClient({
               <button
                 key={prov.slug}
                 type="button"
-                onClick={() => {
-                  setSelectedProvince(active ? "all" : prov.name);
-                  setSelectedDistrict("all");
-                  setVisibleCount(PAGE_SIZE);
-                }}
+                onClick={() =>
+                  setMapState((prev) => ({
+                    ...prev,
+                    selectedProvince: active ? "all" : prov.name,
+                    selectedDistrict: "all",
+                    visibleCount: PAGE_SIZE,
+                  }))
+                }
                 title={`Hợp nhất từ: ${prov.mergedFrom}`}
                 className={cn(
                   "inline-flex min-h-[36px] items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold cursor-pointer transition-colors",
@@ -195,10 +316,13 @@ export function MapExplorerClient({
               {selectedDistrict !== "all" && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedDistrict("all");
-                    setVisibleCount(PAGE_SIZE);
-                  }}
+                  onClick={() =>
+                    setMapState((prev) => ({
+                      ...prev,
+                      selectedDistrict: "all",
+                      visibleCount: PAGE_SIZE,
+                    }))
+                  }
                   className="text-xs font-bold text-[#D84B20] hover:underline cursor-pointer"
                 >
                   Tất cả quận
@@ -208,10 +332,13 @@ export function MapExplorerClient({
             <div className="flex flex-wrap gap-1.5">
               <button
                 type="button"
-                onClick={() => {
-                  setSelectedDistrict("all");
-                  setVisibleCount(PAGE_SIZE);
-                }}
+                onClick={() =>
+                  setMapState((prev) => ({
+                    ...prev,
+                    selectedDistrict: "all",
+                    visibleCount: PAGE_SIZE,
+                  }))
+                }
                 className={cn(
                   "min-h-[34px] rounded-full border px-3 py-1 text-xs font-semibold cursor-pointer transition-colors",
                   selectedDistrict === "all"
@@ -225,10 +352,14 @@ export function MapExplorerClient({
                 <button
                   key={d.name}
                   type="button"
-                  onClick={() => {
-                    setSelectedDistrict(selectedDistrict === d.name ? "all" : d.name);
-                    setVisibleCount(PAGE_SIZE);
-                  }}
+                  onClick={() =>
+                    setMapState((prev) => ({
+                      ...prev,
+                      selectedDistrict:
+                        prev.selectedDistrict === d.name ? "all" : d.name,
+                      visibleCount: PAGE_SIZE,
+                    }))
+                  }
                   className={cn(
                     "inline-flex min-h-[34px] items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold cursor-pointer transition-colors",
                     selectedDistrict === d.name
@@ -259,10 +390,13 @@ export function MapExplorerClient({
             aria-label="Tìm theo tên đường, quận hoặc tên quán"
             placeholder="Lọc theo tên đường, quận hoặc tên quán (không cần dấu)..."
             value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setVisibleCount(PAGE_SIZE);
-            }}
+            onChange={(e) =>
+              setMapState((prev) => ({
+                ...prev,
+                query: e.target.value,
+                visibleCount: PAGE_SIZE,
+              }))
+            }
             className="pl-11"
           />
         </div>
@@ -359,7 +493,12 @@ export function MapExplorerClient({
             type="button"
             variant="dark"
             size="lg"
-            onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+            onClick={() =>
+              setMapState((prev) => ({
+                ...prev,
+                visibleCount: prev.visibleCount + PAGE_SIZE,
+              }))
+            }
           >
             Xem thêm tọa độ (+{Math.min(PAGE_SIZE, filteredPlaces.length - visibleCount)})
           </Button>

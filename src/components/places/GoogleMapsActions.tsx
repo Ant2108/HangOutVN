@@ -1,10 +1,13 @@
 import { ExternalLink, MapPin, Navigation } from "lucide-react";
-import type { Place } from "@/lib/types";
-import { getPlaceDirectionsUrl, getPlaceMapUrl } from "@/lib/maps";
+import {
+  getPlaceDirectionsUrl,
+  getPlaceMapUrl,
+  type PlaceMapInput,
+} from "@/lib/maps";
 import { cn } from "@/lib/utils";
 
 interface GoogleMapsActionsProps {
-  place: Pick<Place, "name" | "address" | "province" | "googleMapsUrl">;
+  place: PlaceMapInput;
   className?: string;
   size?: "md" | "lg";
 }

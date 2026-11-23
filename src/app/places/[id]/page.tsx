@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import {
-  ArrowLeft,
   Clock,
   ExternalLink,
   MapPin,
@@ -12,6 +11,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { getAllPlaces, getPlaceById, getSimilarPlaces } from "@/lib/data";
+import { getPlaceMapUrl } from "@/lib/maps";
 import {
   CATEGORY_LABELS,
   CATEGORY_STYLES,
@@ -23,6 +23,7 @@ import {
 import { GoogleMapsActions } from "@/components/places/GoogleMapsActions";
 import { MenuViewer } from "@/components/places/MenuViewer";
 import { PlaceCard } from "@/components/places/PlaceCard";
+import { SmartBackLink } from "@/components/places/SmartBackLink";
 import { Badge } from "@/components/ui/badge";
 
 export function generateStaticParams() {
@@ -76,13 +77,7 @@ export default async function PlaceDetailPage({
     <article className="mx-auto max-w-6xl px-4 pb-16 pt-28 sm:px-6 sm:pt-32 lg:px-8">
       {/* Breadcrumb & Back */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href="/explore"
-          className="inline-flex items-center gap-2 rounded-full border border-[#242424]/15 bg-white px-4 py-2 text-xs font-semibold text-[#242424] transition-colors hover:bg-[#F6EBD8]"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-          Quay lại Khám phá
-        </Link>
+        <SmartBackLink fallbackHref="/explore" label="Quay lại danh sách" />
 
         <div className="flex items-center gap-2 text-xs text-[#5C564F]">
           <Link
@@ -205,11 +200,23 @@ export default async function PlaceDetailPage({
               <div className="rounded-2xl border border-[#242424]/12 bg-white p-4">
                 <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#5C564F]">
                   <Clock className="h-3.5 w-3.5 text-[#FF7043]" aria-hidden="true" />
-                  Giờ mở cửa &amp; Khu vực
+                  Giờ mở cửa (Google Maps)
                 </span>
-                <p className="mt-1.5 font-display text-base font-bold text-[#242424]">
-                  {place.openingHours || "Xem trên Google Maps"}
-                </p>
+                {place.openingHours ? (
+                  <p className="mt-1.5 font-display text-base font-bold text-[#242424]">
+                    {place.openingHours}
+                  </p>
+                ) : (
+                  <a
+                    href={getPlaceMapUrl(place)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1.5 inline-flex items-center gap-1 font-display text-sm font-bold text-[#D84B20] hover:underline"
+                  >
+                    Xem giờ trực tiếp trên Google Maps
+                    <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                  </a>
+                )}
                 <p className="mt-0.5 text-xs text-[#5C564F]">
                   {place.province}
                   {place.region ? ` · ${place.region}` : ""}

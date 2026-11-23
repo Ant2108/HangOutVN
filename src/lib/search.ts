@@ -34,9 +34,9 @@ export function buildSearchIndex(places: Place[]): IndexedPlace[] {
 export function filterAndSortPlaces(
   indexed: IndexedPlace[],
   filters: ExploreFilters,
-  now?: Date
+  now?: Date | null
 ): Place[] {
-  const refTime = now ?? new Date();
+  const refTime = now === undefined ? new Date() : now;
   const normalizedQuery = removeVietnameseTones(filters.query);
   const tokens = normalizedQuery ? normalizedQuery.split(/\s+/).filter(Boolean) : [];
 
@@ -45,9 +45,10 @@ export function filterAndSortPlaces(
   for (const item of indexed) {
     const { place, searchBlob } = item;
 
-    if (filters.onlyOpenNow) {
+    if (filters.onlyOpenNow && refTime) {
       const st = getPlaceOpenStatus(place.openingHours, refTime);
-      if (!st || !st.isOpen) continue;
+      // Hide places confirmed CLOSED on Google Maps right now
+      if (st !== null && !st.isOpen) continue;
     }
 
     if (filters.province !== "all" && place.province !== filters.province) {
@@ -104,11 +105,13 @@ export function filterAndSortPlaces(
     case "featured":
     default:
       matched.sort((a, b) => {
-        const stA = getPlaceOpenStatus(a.openingHours, refTime);
-        const stB = getPlaceOpenStatus(b.openingHours, refTime);
-        const rankA = stA === null ? 1 : stA.isOpen ? 2 : 0;
-        const rankB = stB === null ? 1 : stB.isOpen ? 2 : 0;
-        if (rankA !== rankB) return rankB - rankA;
+        if (refTime) {
+          const stA = getPlaceOpenStatus(a.openingHours, refTime);
+          const stB = getPlaceOpenStatus(b.openingHours, refTime);
+          const rankA = stA === null ? 1 : stA.isOpen ? 2 : 0;
+          const rankB = stB === null ? 1 : stB.isOpen ? 2 : 0;
+          if (rankA !== rankB) return rankB - rankA;
+        }
         const fa = a.featured ? 1 : 0;
         const fb = b.featured ? 1 : 0;
         if (fa !== fb) return fb - fa;

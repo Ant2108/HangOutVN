@@ -6,7 +6,7 @@
     "tagline": "Từ hẻm ăn vặt bình dân đến quán ngon bản địa",
     "accent": "#FF7043",
     "image": "/images/places/vn-dishes/banh-mi-1.jpg",
-    "count": 1238
+    "count": 1219
   },
   {
     "id": "coffee",
@@ -15,7 +15,7 @@
     "tagline": "Cà phê aesthetic, matcha chuẩn vị & góc chạy deadline",
     "accent": "#FFD166",
     "image": "/images/places/vn-dishes/cafe-chill-1.jpg",
-    "count": 282
+    "count": 280
   },
   {
     "id": "date",
@@ -33,7 +33,7 @@
     "tagline": "Sân vườn xanh mát, ven hồ gió lộng & acoustic tối",
     "accent": "#B7E4C7",
     "image": "/images/places/vn-dishes/cafe-san-vuon-1.jpg",
-    "count": 96
+    "count": 95
   },
   {
     "id": "fun",

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowUpRight,
@@ -27,9 +27,9 @@ import type {
   Place,
   Province,
   RecommendationInput,
-  RecommendationResult,
 } from "@/lib/types";
 import {
+  buildRecommendationResult,
   getMatchingRecommendationPool,
   pickRandomRecommendation,
 } from "@/lib/recommender";
@@ -41,10 +41,18 @@ import {
   getPlaceOpenStatus,
   getPricePerPerson,
 } from "@/lib/utils";
+import {
+  readPersistedState,
+  useIsClient,
+  usePersistedFilterStore,
+  useScrollPreservation,
+} from "@/lib/filterPersistence";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { GoogleMapsActions } from "@/components/places/GoogleMapsActions";
 import { MenuViewer } from "@/components/places/MenuViewer";
+
+const RANDOM_STORAGE_KEY = "hangout:random:v1";
 
 interface RandomizerClientProps {
   places: Place[];
@@ -78,17 +86,139 @@ const INITIAL_INPUT: RecommendationInput = {
   onlyOpenNow: true,
 };
 
+interface PersistedRandomState {
+  input: RecommendationInput;
+  resultPlaceId: string | null;
+  hasSearched: boolean;
+}
+
+const SERVER_DEFAULT_RANDOM: PersistedRandomState = {
+  input: INITIAL_INPUT,
+  resultPlaceId: null,
+  hasSearched: false,
+};
+
+function serializeRandomToParams(state: PersistedRandomState): URLSearchParams {
+  const params = new URLSearchParams();
+  const { input, resultPlaceId } = state;
+  if (input.province !== "all") params.set("province", input.province);
+  if (input.province !== "all" && input.district !== "all") {
+    params.set("district", input.district);
+  }
+  if (input.budget !== "all") params.set("budget", input.budget);
+  if (input.companion !== "any") params.set("companion", input.companion);
+  if (input.activity !== "any") params.set("activity", input.activity);
+  if (input.vibe !== "all") params.set("vibe", input.vibe);
+  if (input.onlyOpenNow === false) params.set("open", "0");
+  if (resultPlaceId) params.set("pick", resultPlaceId);
+  return params;
+}
+
 export function RandomizerClient({
   places,
   provinces,
   vibes,
 }: RandomizerClientProps) {
-  const [input, setInput] = useState<RecommendationInput>(INITIAL_INPUT);
+  const isClient = useIsClient();
+
+  const resolveClientState = useCallback((): PersistedRandomState => {
+    const saved = readPersistedState<PersistedRandomState>(RANDOM_STORAGE_KEY);
+    const params =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search)
+        : new URLSearchParams();
+
+    const hasUrlFilter = [
+      "province",
+      "district",
+      "budget",
+      "companion",
+      "activity",
+      "vibe",
+      "open",
+      "pick",
+    ].some((k) => params.has(k));
+
+    if (hasUrlFilter) {
+      const prov = params.get("province") || "all";
+      const validProv = provinces.some((p) => p.name === prov) ? prov : "all";
+      const budget = (params.get("budget") as BudgetBucket | null) || "all";
+      const comp = (params.get("companion") as CompanionType | null) || "any";
+      const act = (params.get("activity") as ActivityType | null) || "any";
+      const vibe = params.get("vibe") || "all";
+      const pick = params.get("pick");
+      const validPick = pick && places.some((p) => p.id === pick) ? pick : null;
+
+      return {
+        input: {
+          province: validProv,
+          district: validProv !== "all" ? params.get("district") || "all" : "all",
+          budget: BUDGET_OPTIONS.some((b) => b.value === budget) ? budget : "all",
+          companion: COMPANIONS.some((c) => c.value === comp) ? comp : "any",
+          activity: ACTIVITIES.some((a) => a.value === act) ? act : "any",
+          vibe: vibes.includes(vibe) ? vibe : "all",
+          onlyOpenNow: params.get("open") !== "0",
+        },
+        resultPlaceId: validPick,
+        hasSearched: Boolean(validPick),
+      };
+    }
+
+    if (saved && saved.input) {
+      const validProv = provinces.some((p) => p.name === saved.input.province)
+        ? saved.input.province
+        : "all";
+      const validPick =
+        saved.resultPlaceId && places.some((p) => p.id === saved.resultPlaceId)
+          ? saved.resultPlaceId
+          : null;
+      return {
+        input: {
+          ...INITIAL_INPUT,
+          ...saved.input,
+          province: validProv,
+          district: validProv !== "all" ? saved.input.district || "all" : "all",
+          budget: BUDGET_OPTIONS.some((b) => b.value === saved.input.budget)
+            ? saved.input.budget
+            : "all",
+          companion: COMPANIONS.some((c) => c.value === saved.input.companion)
+            ? saved.input.companion
+            : "any",
+          activity: ACTIVITIES.some((a) => a.value === saved.input.activity)
+            ? saved.input.activity
+            : "any",
+          vibe: vibes.includes(saved.input.vibe) ? saved.input.vibe : "all",
+        },
+        resultPlaceId: validPick,
+        hasSearched: Boolean(saved.hasSearched || validPick),
+      };
+    }
+
+    return SERVER_DEFAULT_RANDOM;
+  }, [places, provinces, vibes]);
+
+  const [randomState, setRandomState, resetRandomState] =
+    usePersistedFilterStore<PersistedRandomState>({
+      storageKey: RANDOM_STORAGE_KEY,
+      urlKey: "",
+      serverDefault: SERVER_DEFAULT_RANDOM,
+      resolveClientState,
+      serializeToUrlParams: serializeRandomToParams,
+    });
+
+  useScrollPreservation(RANDOM_STORAGE_KEY, isClient);
+
+  const { input, resultPlaceId, hasSearched } = randomState;
   const [isSpinning, setIsSpinning] = useState(false);
   const [rollingName, setRollingName] = useState<string>("");
-  const [result, setResult] = useState<RecommendationResult | null>(null);
-  const [hasSearched, setHasSearched] = useState(false);
   const timerRef = useRef<number | null>(null);
+
+  const updateInput = (updater: (prev: RecommendationInput) => RecommendationInput) => {
+    setRandomState((prev) => ({
+      ...prev,
+      input: updater(prev.input),
+    }));
+  };
 
   const districtsForProvince = useMemo(() => {
     if (input.province === "all") return [];
@@ -104,9 +234,21 @@ export function RandomizerClient({
   }, [places, input.province]);
 
   const matchingPool = useMemo(
-    () => getMatchingRecommendationPool(places, input),
-    [places, input]
+    () => getMatchingRecommendationPool(places, input, isClient ? new Date() : null),
+    [places, input, isClient]
   );
+
+  const result = useMemo(() => {
+    if (!resultPlaceId) return null;
+    const found = places.find((p) => p.id === resultPlaceId);
+    if (!found) return null;
+    return buildRecommendationResult(
+      found,
+      input,
+      matchingPool.length,
+      isClient ? new Date() : null
+    );
+  }, [resultPlaceId, places, input, matchingPool.length, isClient]);
 
   const handleGenerate = () => {
     if (timerRef.current) {
@@ -114,10 +256,8 @@ export function RandomizerClient({
       timerRef.current = null;
     }
 
-    setHasSearched(true);
-
     if (matchingPool.length === 0) {
-      setResult(null);
+      setRandomState((prev) => ({ ...prev, resultPlaceId: null, hasSearched: true }));
       setIsSpinning(false);
       return;
     }
@@ -127,7 +267,12 @@ export function RandomizerClient({
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (prefersReduced) {
-      setResult(pickRandomRecommendation(places, input, result?.place.id));
+      const picked = pickRandomRecommendation(places, input, resultPlaceId || undefined);
+      setRandomState((prev) => ({
+        ...prev,
+        resultPlaceId: picked?.place.id ?? null,
+        hasSearched: true,
+      }));
       return;
     }
 
@@ -143,17 +288,24 @@ export function RandomizerClient({
       if (ticks >= totalTicks) {
         if (timerRef.current) window.clearInterval(timerRef.current);
         timerRef.current = null;
-        const picked = pickRandomRecommendation(places, input, result?.place.id);
-        setResult(picked);
+        const picked = pickRandomRecommendation(places, input, resultPlaceId || undefined);
+        setRandomState((prev) => ({
+          ...prev,
+          resultPlaceId: picked?.place.id ?? null,
+          hasSearched: true,
+        }));
         setIsSpinning(false);
       }
     }, 65);
   };
 
   const resetAll = () => {
-    setInput(INITIAL_INPUT);
-    setResult(null);
-    setHasSearched(false);
+    if (timerRef.current) {
+      window.clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setIsSpinning(false);
+    resetRandomState(SERVER_DEFAULT_RANDOM);
   };
 
   return (
@@ -189,7 +341,7 @@ export function RandomizerClient({
                 id="random-province"
                 value={input.province}
                 onChange={(e) =>
-                  setInput((p) => ({ ...p, province: e.target.value, district: "all" }))
+                  updateInput((p) => ({ ...p, province: e.target.value, district: "all" }))
                 }
               >
                 <option value="all">Toàn quốc (34 tỉnh/thành)</option>
@@ -213,7 +365,7 @@ export function RandomizerClient({
                 <Select
                   id="random-district"
                   value={input.district}
-                  onChange={(e) => setInput((p) => ({ ...p, district: e.target.value }))}
+                  onChange={(e) => updateInput((p) => ({ ...p, district: e.target.value }))}
                 >
                   <option value="all">Tất cả quận tại {input.province}</option>
                   {districtsForProvince.map((d) => (
@@ -237,7 +389,7 @@ export function RandomizerClient({
                 id="random-budget"
                 value={input.budget}
                 onChange={(e) =>
-                  setInput((p) => ({ ...p, budget: e.target.value as BudgetBucket }))
+                  updateInput((p) => ({ ...p, budget: e.target.value as BudgetBucket }))
                 }
               >
                 {BUDGET_OPTIONS.map((opt) => (
@@ -261,7 +413,7 @@ export function RandomizerClient({
                     <button
                       key={c.value}
                       type="button"
-                      onClick={() => setInput((p) => ({ ...p, companion: c.value }))}
+                      onClick={() => updateInput((p) => ({ ...p, companion: c.value }))}
                       className={cn(
                         "flex min-h-[42px] items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-xs font-bold cursor-pointer transition-all",
                         active
@@ -290,7 +442,7 @@ export function RandomizerClient({
                     <button
                       key={a.value}
                       type="button"
-                      onClick={() => setInput((p) => ({ ...p, activity: a.value }))}
+                      onClick={() => updateInput((p) => ({ ...p, activity: a.value }))}
                       className={cn(
                         "flex min-h-[42px] items-center justify-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-bold cursor-pointer transition-all",
                         active
@@ -317,7 +469,7 @@ export function RandomizerClient({
               <Select
                 id="random-vibe"
                 value={input.vibe}
-                onChange={(e) => setInput((p) => ({ ...p, vibe: e.target.value }))}
+                onChange={(e) => updateInput((p) => ({ ...p, vibe: e.target.value }))}
               >
                 <option value="all">Mọi vibe</option>
                 {vibes.map((v) => (
@@ -333,7 +485,7 @@ export function RandomizerClient({
               <button
                 type="button"
                 onClick={() =>
-                  setInput((p) => ({ ...p, onlyOpenNow: !p.onlyOpenNow }))
+                  updateInput((p) => ({ ...p, onlyOpenNow: !p.onlyOpenNow }))
                 }
                 aria-pressed={Boolean(input.onlyOpenNow)}
                 className={cn(
@@ -435,7 +587,9 @@ export function RandomizerClient({
                 >
                   <div className="relative aspect-[16/9] w-full bg-[#F6EBD8]">
                     {(() => {
-                      const st = getPlaceOpenStatus(result.place.openingHours);
+                      const st = isClient
+                        ? getPlaceOpenStatus(result.place.openingHours, new Date())
+                        : null;
                       return (
                         <>
                           <Image
@@ -569,7 +723,7 @@ export function RandomizerClient({
                         type="button"
                         variant="dark"
                         onClick={() =>
-                          setInput((p) => ({ ...p, onlyOpenNow: false }))
+                          updateInput((p) => ({ ...p, onlyOpenNow: false }))
                         }
                       >
                         <Clock className="h-4 w-4" aria-hidden="true" />

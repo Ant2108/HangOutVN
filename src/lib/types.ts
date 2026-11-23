@@ -31,6 +31,8 @@ export const PlaceSchema = z.object({
   description: z.string().optional(),
   images: z.array(z.string()).min(1),
   googleMapsUrl: z.string().optional(),
+  googlePlaceId: z.string().optional(),
+  mapsQuery: z.string().optional(),
   menuUrl: z.string().optional(),
   reviewUrl: z.string().optional(),
   latitude: z.number().optional(),

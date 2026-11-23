@@ -108,14 +108,9 @@ function formatHHMM(totalMinutes: number): string {
 export function getPlaceOpenStatus(
   openingHours?: string,
   now: Date = new Date()
-): OpenStatusInfo {
+): OpenStatusInfo | null {
   if (!openingHours || !openingHours.trim()) {
-    return {
-      isOpen: true,
-      isClosingSoon: false,
-      label: "Đang mở cửa",
-      detail: "Cả ngày",
-    };
+    return null;
   }
 
   const raw = openingHours.trim();

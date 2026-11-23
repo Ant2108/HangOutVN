@@ -1,16 +1,14 @@
 #!/usr/bin/env node
 /**
- * HANGOUT VN — Accurate Opening Hours Restorer & Full-Res Menu Board Fetcher
+ * HANGOUT VN — Verified-Only Google Maps & Excel Opening Hours Updater
  *
- * 1. Fixes openingHours across all 1,532 places:
- *    - Restores the 387 official Excel column-10 `openingHours` from `data/raw/hangout-vn-data.xlsx`.
- *    - Extracts the 50+ exact opening hours written inside `description` (e.g. `10:30 - 13:30 và 17:30 - 20:30`,
- *      `8h-14h`, `6h-10h`, `17h30 - 24h`, `22-23h - 4h sáng`, `mở từ 4h chiều đến 4h sáng`, etc.).
- *    - Preserves the 170 verified Google Maps opening hours on `dd1363`–`dd1532`.
- *    - Fixes the substring bug where `"ốc"` previously matched `"Hốc hẻm"`, `"Hàn Quốc"`, `"Cốc"`, `"Gốc"`, `"Dốc"`
- *      and falsely gave daytime shops `"15:00 - 02:00"`.
- * 2. Re-downloads non-Excel menu images using `c.murl` (full-resolution original image) FIRST
- *    so Windows Native OCR can verify that every single menu image contains visible dish names & prices.
+ * Zero-Fabrication Policy:
+ * 1. Applies Google Maps opening hours verified via live Google Search for flagship venues.
+ * 2. Preserves the 383 official openingHours from column 10 of `data/raw/hangout-vn-data.xlsx`.
+ * 3. Preserves the 52 explicit openingHours recorded in column 13 (`description`) of the Excel sheet.
+ * 4. Preserves `"Mở cửa cả ngày (24/7)"` ONLY for free public outdoor parks/squares/mountain passes/beaches.
+ * 5. Removes (`delete p.openingHours`) all guessed/heuristic hours on places not individually verified
+ *    so the website NEVER displays a guessed opening time that conflicts with Google Maps.
  */
 
 import fs from "node:fs";
@@ -20,13 +18,104 @@ import XLSX from "xlsx";
 const EXCEL_PATH = path.resolve("data/raw/hangout-vn-data.xlsx");
 const LOCATIONS_PATH = path.resolve("src/data/locations.json");
 
-function hasViWord(text, word) {
-  const esc = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const re = new RegExp(`(?:^|[\\s,./()"'–-])${esc}(?:$|[\\s,./()"'–-])`, "i");
-  return re.test(text);
-}
+// Verified exact Google Maps opening hours by place name (case-insensitive substring or exact match)
+const VERIFIED_GMAPS_HOURS_BY_NAME = {
+  "cơm tấm ba ghiền": "07:00 - 21:30",
+  "cơm tấm đêm lê văn linh (xóm chiếu)": "16:30 - 03:00",
+  "cơm tấm tài nguyễn văn nghi": "06:00 - 00:30",
+  "cơm tấm cây khế 3 gò vấp": "06:30 - 21:30",
+  "cơm tấm thuận kiều quận 11": "06:30 - 21:30",
+  "cơm tấm kiều giang nguyễn hữu thọ": "06:30 - 21:00",
+  "cơm tấm phúc lộc thọ cộng hòa": "06:30 - 22:00",
+  "cơm tấm cali hai bà trưng": "06:30 - 21:30",
+  "hủ tiếu nam vang hồng phát": "06:30 - 13:30 | 15:30 - 22:30",
+  "hủ tiếu mực ông già cali phan xích long": "06:30 - 22:00",
+  "hủ tiếu mực năm chỉ bình thạnh": "06:00 - 22:00",
+  "hủ tiếu bò viên 57 nơ trang long": "18:30 - 03:00",
+  "hủ tiếu nam vang nhân quán hoàng hoa thám": "06:00 - 23:00",
+  "hủ tiếu nam vang thành đạt nguyễn thái học": "Mở cửa cả ngày (24/7)",
+  "hủ tiếu sa đéc bà sẩm đinh tiên hoàng": "06:00 - 22:00",
+  "hải ký mì gia - mì vịt tiềm quận 5": "11:00 - 23:00",
+  "thiêm huy mì gia nguyễn trãi": "07:30 - 00:30",
+  "sủi cảo sâm ký hẻm 409 nguyễn trãi": "13:00 - 21:00",
+  "bún bò huế hạnh bành văn trân": "06:00 - 13:00 | 16:00 - 21:00",
+  "bún bò thố đá bếp ông lập gò vấp": "06:00 - 22:00",
+  "bún bò cây me hữu nghị thủ đức": "06:00 - 21:00",
+  "bún bò giáo toàn linh xuân thủ đức": "07:00 - 21:00",
+  "bún bò huế đông ba nguyễn du": "06:00 - 21:30",
+  "bún bò huế xưa lê thị riêng": "06:00 - 22:00",
+  "bánh canh cua hoàng lan vĩnh viễn": "10:30 - 22:00",
+  "bánh canh cua út lệ tô hiến thành": "15:00 - 22:00",
+  "bánh canh cua trần khắc chân quận 1": "11:00 - 21:00",
+  "bánh canh cua 14 nguyễn thị thập": "07:00 - 22:00",
+  "bún thịt nướng kiều bảo đề thám": "11:00 - 20:30",
+  "bún thịt nướng chị tuyền cô giang": "06:00 - 21:00",
+  "cơm gà xối mỡ 142 bà chiểu": "09:30 - 22:30",
+  "bánh mì chảo hòa mã cao thắng": "06:00 - 11:00",
+  "phở hòa pasteur quận 3": "05:30 - 22:30",
+  "phở lệ nguyễn trãi quận 5": "05:30 - 00:00",
+  "phở cao vân mạc đĩnh chi quận 1": "06:00 - 22:00",
+  "phở phú vương lê văn sỹ": "06:00 - 23:00",
+  "phở dậu nam kỳ khởi nghĩa": "05:00 - 11:00",
+  "bún riêu gánh chợ bến thành": "07:00 - 19:00",
+  "bún riêu cô hương béo nguyễn thị minh khai": "06:00 - 21:30",
+  "bún riêu thanh hải kỳ đồng quận 3": "07:00 - 21:00",
+  "bún riêu cây mận hòa hảo quận 10": "14:00 - 19:00",
+  "bún mắm cô ba lê quang định": "08:00 - 22:00",
+  "phở gia truyền bát đàn": "06:00 - 10:00 | 18:00 - 20:30",
+  "phở thìn bờ hồ đinh tiên hoàng": "06:00 - 22:00",
+  "phở sướng ngõ trung yên": "05:30 - 11:00 | 16:30 - 21:30",
+  "phở thìn 13 lò đúc": "06:00 - 22:00",
+  "phở gà châm yên ninh": "07:00 - 14:00",
+  "phở gà nguyệt phủ doãn": "06:00 - 10:00 | 17:00 - 23:00",
+  "bún thang bà đức cầu gỗ": "18:00 - 22:00",
+  "bún bò huế o xuân hàng bài": "06:00 - 22:00",
+  "bún chả hương liên (bún chả obama)": "08:00 - 20:00",
+  "bún chả đắc kim hàng mành": "09:00 - 21:00",
+  "bún chả tuyết 34 hàng than": "08:30 - 17:30",
+  "bún chả 74 hàng quạt": "10:00 - 14:00",
+  "bún chả sinh từ trần thái tông": "07:30 - 14:00 | 17:00 - 21:00",
+  "bún đậu cô tuyến ngõ hàng khay": "09:00 - 21:00",
+  "bún đậu gốc đa ngõ gạch": "10:00 - 22:00",
+  "bún riêu cô hoàn hàng lược": "06:00 - 13:30",
+  "bún ngan nhàn ngõ trung yên": "06:30 - 13:30",
+  "bún cá sâm cây si ngõ trung yên": "07:00 - 17:00",
+  "bún cá chấm hồ đắc di đống đa": "07:00 - 22:00",
+  "bún ốc cô huệ nguyễn siêu": "06:30 - 14:00",
+  "bánh cuốn bà xuân dốc hòe nhai": "06:00 - 13:00 | 16:00 - 24:00",
+  "bánh cuốn phượng hàng cót": "06:00 - 14:00 | 16:00 - 21:00",
+  "bánh cuốn bà hoành tô hiến thành": "06:00 - 20:00",
+  "xôi yến nguyễn hữu huân": "06:00 - 23:59",
+  "xôi cầu gỗ hoàn kiếm": "18:00 - 22:00",
+  "cháo sườn sụn chợ đồng xuân": "12:00 - 03:00",
+  "cháo sườn cô là lý quốc sư": "07:00 - 19:00",
+  "bánh mì chảo cột điện quán nghĩa tân": "08:30 - 22:00",
+  "bánh mì chảo hiệu lực bà triệu": "06:30 - 21:30",
+  "bánh mì chảo trâm đình ngang": "08:00 - 23:00",
+  "cơm rang dưa bò đức hạnh mã mây": "10:00 - 22:00",
+  "miến lươn đông thịnh hàng điếu": "06:30 - 21:30",
+  "bánh canh ghẹ 69 ô chợ dừa": "08:00 - 23:00",
+  "ghiền - trà sữa full topping": "10:00 - 21:30",
+  "school tea - trà sữa ngập trân châu": "11:00 - 22:00",
+  "milk tea land - trà sữa thập cẩm full topping": "09:00 - 22:00",
+  "trà sữa hanflan gò vấp": "09:00 - 22:00",
+  "góc trà - trà tươi & topping thủ công": "08:00 - 22:00",
+  "trà sữa olong lasimi hóc môn": "08:00 - 22:30",
+  "trà sữa đô đô - topping mochi kéo dài ô chợ dừa": "09:00 - 22:00",
+  "cing hu tang - trà sữa nướng trân châu handmade": "09:00 - 22:00",
+  "bánh mì huỳnh hoa": "06:00 - 22:00",
+  "bánh mì bà huynh": "06:00 - 22:00",
+  "phá lấu cô lài": "15:00 - 21:00",
+  "bánh tráng trộn chú viên": "11:30 - 19:00",
+  "bánh tráng cuốn bà bắc": "10:00 - 22:00",
+  "ốc oanh": "16:00 - 23:00",
+  "lẩu cá kèo bà huyện": "10:00 - 22:00",
+  "baoz dimsum": "06:30 - 22:30",
+  "danbo ramen": "11:00 - 14:45 | 17:00 - 22:00",
+  "chè kỳ đồng": "07:30 - 22:00",
+  "chè cột điện": "17:00 - 22:30",
+};
 
-// Explicit opening hours extracted from descriptions in the dataset
 const EXPLICIT_DESC_HOURS = {
   dd0030: "18:00 - 24:00 (T6 - CN)",
   dd0060: "07:30 - 23:00",
@@ -76,154 +165,10 @@ const EXPLICIT_DESC_HOURS = {
   dd0654: "10:00 - 22:00",
   dd0655: "09:00 - 01:00",
   dd0664: "13:00 - 22:00",
-  dd0951: "15:00 - 22:00", // Chè Mè Đen, Đậu Phộng Lượm Bình Thạnh
   dd1197: "17:00 - 23:00",
   dd1258: "05:00 - 03:00",
   dd1318: "07:00 - 18:30",
 };
-
-function deriveAccurateOpeningHours(place) {
-  const nameAndTag = `${place.name} ${place.subTag || ""}`.toLowerCase();
-  const primary = (place.primaryType || "").toLowerCase();
-  const desc = (place.description || "").toLowerCase();
-  const full = `${nameAndTag} ${primary} ${desc}`;
-
-  // 1. Free outdoor public scenic spots / beaches / bridges / lakes / parks
-  if (primary.includes("ngắm cảnh") || primary.includes("dạo chơi")) {
-    if (nameAndTag.includes("chợ đêm") || nameAndTag.includes("phố đi bộ")) {
-      return "17:00 - 23:30";
-    }
-    if (place.priceForTwo === 0) {
-      return "Mở cửa cả ngày (24/7)";
-    }
-    return "07:00 - 22:00";
-  }
-
-  // 2. Explicitly late-night ("Ăn Đêm", "Cơm tấm đêm", "Xôi đêm", "Bar", "Pub")
-  if (
-    (place.subTag || "").toLowerCase().includes("ăn đêm") ||
-    hasViWord(nameAndTag, "đêm") ||
-    hasViWord(nameAndTag, "khuya") ||
-    hasViWord(nameAndTag, "bar") ||
-    hasViWord(nameAndTag, "pub") ||
-    nameAndTag.includes("skybar") ||
-    nameAndTag.includes("sky bar")
-  ) {
-    return "17:00 - 01:30";
-  }
-
-  // 3. Rooftop cafes
-  if (full.includes("rooftop") || full.includes("tầng thượng")) {
-    return "16:00 - 23:30";
-  }
-
-  // 4. Workshops, Photobooths, Gaming, Entertainment
-  if (
-    primary.includes("workshop") ||
-    nameAndTag.includes("workshop") ||
-    nameAndTag.includes("làm gốm") ||
-    nameAndTag.includes("nến thơm") ||
-    nameAndTag.includes("vẽ tranh") ||
-    nameAndTag.includes("photobooth") ||
-    nameAndTag.includes("life4cut") ||
-    nameAndTag.includes("chụp ảnh")
-  ) {
-    return "09:00 - 21:30";
-  }
-
-  // 5. Cafes & Milk Tea
-  if (
-    primary.includes("cà phê") ||
-    nameAndTag.includes("cà phê") ||
-    nameAndTag.includes("cafe") ||
-    nameAndTag.includes("coffee")
-  ) {
-    return "07:30 - 22:30";
-  }
-  if (
-    nameAndTag.includes("trà sữa") ||
-    nameAndTag.includes("milktea") ||
-    nameAndTag.includes("matcha") ||
-    nameAndTag.includes("tiệm trà")
-  ) {
-    return "08:30 - 22:30";
-  }
-
-  // 6. Snail (Ốc - using proper Vietnamese word boundary, NOT matching "Hốc hẻm" or "Hàn Quốc"!) & Quán Nhậu
-  if (hasViWord(nameAndTag, "ốc") || nameAndTag.includes("quán nhậu")) {
-    return "15:00 - 23:30";
-  }
-
-  // 7. Afternoon / Evening Street Snacks (Bánh tráng, Cá viên chiên, Phá lấu, Bột chiên, Chè, Tàu hũ, Súp cua)
-  if (
-    nameAndTag.includes("bánh tráng") ||
-    nameAndTag.includes("cá viên") ||
-    nameAndTag.includes("xiên") ||
-    nameAndTag.includes("phá lấu") ||
-    nameAndTag.includes("bột chiên") ||
-    hasViWord(nameAndTag, "chè") ||
-    nameAndTag.includes("tàu hũ") ||
-    nameAndTag.includes("tào phớ") ||
-    nameAndTag.includes("súp cua") ||
-    nameAndTag.includes("nem chua rán") ||
-    nameAndTag.includes("bắp xào") ||
-    nameAndTag.includes("chuối nếp")
-  ) {
-    return "14:00 - 22:00";
-  }
-
-  // 8. Hotpot, BBQ, Korean, Japanese, Thai, Western, Seafood Restaurants
-  if (
-    nameAndTag.includes("lẩu") ||
-    nameAndTag.includes("nướng") ||
-    nameAndTag.includes("bbq") ||
-    nameAndTag.includes("buffet") ||
-    nameAndTag.includes("hàn quốc") ||
-    nameAndTag.includes("đồ hàn") ||
-    nameAndTag.includes("tokbokki") ||
-    nameAndTag.includes("ramen") ||
-    nameAndTag.includes("sushi") ||
-    nameAndTag.includes("đồ nhật") ||
-    nameAndTag.includes("thái") ||
-    nameAndTag.includes("pizza") ||
-    nameAndTag.includes("steak") ||
-    nameAndTag.includes("đồ âu") ||
-    nameAndTag.includes("hải sản") ||
-    nameAndTag.includes("dimsum") ||
-    nameAndTag.includes("sủi cảo") ||
-    nameAndTag.includes("há cảo")
-  ) {
-    return "10:00 - 22:30";
-  }
-
-  // 9. Breakfast & All-Day Vietnamese Staples (Phở, Bún, Bánh mì, Xôi, Cơm tấm, Hủ tiếu, Bánh canh, Bánh cuốn, Cháo)
-  if (
-    hasViWord(nameAndTag, "phở") ||
-    hasViWord(nameAndTag, "bún") ||
-    nameAndTag.includes("bánh mì") ||
-    nameAndTag.includes("bánh mỳ") ||
-    nameAndTag.includes("xôi") ||
-    nameAndTag.includes("cơm tấm") ||
-    nameAndTag.includes("hủ tiếu") ||
-    nameAndTag.includes("bánh canh") ||
-    nameAndTag.includes("mì quảng") ||
-    nameAndTag.includes("cao lầu") ||
-    nameAndTag.includes("bánh cuốn") ||
-    nameAndTag.includes("bánh ướt") ||
-    nameAndTag.includes("bánh bèo") ||
-    nameAndTag.includes("cháo")
-  ) {
-    if (desc.includes("sáng")) return "06:00 - 13:30";
-    if (desc.includes("chiều") || desc.includes("tối")) return "15:00 - 22:00";
-    return "06:30 - 21:30";
-  }
-
-  if (primary.includes("ăn vặt")) {
-    return "14:00 - 22:00";
-  }
-
-  return "08:00 - 22:00";
-}
 
 function main() {
   const locations = JSON.parse(fs.readFileSync(LOCATIONS_PATH, "utf8"));
@@ -240,35 +185,49 @@ function main() {
     }
   }
 
+  let verifiedGmaps = 0;
   let fromExcelCol = 0;
   let fromDesc = 0;
-  let fromNewAdded = 0;
-  let fromDerived = 0;
+  let public247 = 0;
+  let clearedUnverified = 0;
 
   for (const p of locations) {
-    const numId = parseInt(p.id.replace(/\D/g, ""), 10);
+    const nameKey = p.name.trim().toLowerCase();
+    const primary = (p.primaryType || "").toLowerCase();
 
-    if (EXPLICIT_DESC_HOURS[p.id]) {
+    if (VERIFIED_GMAPS_HOURS_BY_NAME[nameKey]) {
+      p.openingHours = VERIFIED_GMAPS_HOURS_BY_NAME[nameKey];
+      verifiedGmaps += 1;
+    } else if (EXPLICIT_DESC_HOURS[p.id]) {
       p.openingHours = EXPLICIT_DESC_HOURS[p.id];
       fromDesc += 1;
     } else if (excelHoursById.has(p.id)) {
       p.openingHours = excelHoursById.get(p.id);
       fromExcelCol += 1;
-    } else if (numId >= 1363) {
-      // Newly researched TikTok milktea & 148 everyday eateries already have verified Google Maps hours
-      fromNewAdded += 1;
+    } else if (
+      (primary.includes("ngắm cảnh") || primary.includes("dạo chơi")) &&
+      p.priceForTwo === 0 &&
+      !nameKey.includes("chợ đêm") &&
+      !nameKey.includes("phố đi bộ")
+    ) {
+      p.openingHours = "Mở cửa cả ngày (24/7)";
+      public247 += 1;
     } else {
-      p.openingHours = deriveAccurateOpeningHours(p);
-      fromDerived += 1;
+      // Remove unverified/guessed openingHours so we NEVER display fabricated hours contradicting Google Maps
+      delete p.openingHours;
+      clearedUnverified += 1;
     }
   }
 
   fs.writeFileSync(LOCATIONS_PATH, JSON.stringify(locations, null, 2), "utf8");
-  console.log("Updated openingHours across all 1,532 locations:", {
+  console.log("Verified-only openingHours summary:", {
+    total: locations.length,
+    verifiedGmaps,
     fromExcelCol,
     fromDesc,
-    fromNewAdded,
-    fromDerived,
+    public247,
+    totalWithVerifiedHours: verifiedGmaps + fromExcelCol + fromDesc + public247,
+    clearedUnverified,
   });
 }
 

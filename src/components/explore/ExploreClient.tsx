@@ -120,7 +120,11 @@ export function ExploreClient({
   );
 
   const openNowPlaceCount = useMemo(
-    () => places.filter((p) => getPlaceOpenStatus(p.openingHours).isOpen).length,
+    () =>
+      places.filter((p) => {
+        const st = getPlaceOpenStatus(p.openingHours);
+        return st !== null && st.isOpen;
+      }).length,
     [places]
   );
 

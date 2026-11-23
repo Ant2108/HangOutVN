@@ -90,7 +90,6 @@ export function MenuViewer({
 
   React.useEffect(() => {
     if (!open) return;
-    setZoom(1);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
@@ -249,6 +248,7 @@ export function MenuViewer({
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          setZoom(1);
           setOpen(true);
         }}
         className={cn(

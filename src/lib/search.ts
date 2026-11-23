@@ -45,8 +45,9 @@ export function filterAndSortPlaces(
   for (const item of indexed) {
     const { place, searchBlob } = item;
 
-    if (filters.onlyOpenNow && !getPlaceOpenStatus(place.openingHours, refTime).isOpen) {
-      continue;
+    if (filters.onlyOpenNow) {
+      const st = getPlaceOpenStatus(place.openingHours, refTime);
+      if (!st || !st.isOpen) continue;
     }
 
     if (filters.province !== "all" && place.province !== filters.province) {
@@ -103,9 +104,11 @@ export function filterAndSortPlaces(
     case "featured":
     default:
       matched.sort((a, b) => {
-        const openA = getPlaceOpenStatus(a.openingHours, refTime).isOpen ? 1 : 0;
-        const openB = getPlaceOpenStatus(b.openingHours, refTime).isOpen ? 1 : 0;
-        if (openA !== openB) return openB - openA;
+        const stA = getPlaceOpenStatus(a.openingHours, refTime);
+        const stB = getPlaceOpenStatus(b.openingHours, refTime);
+        const rankA = stA === null ? 1 : stA.isOpen ? 2 : 0;
+        const rankB = stB === null ? 1 : stB.isOpen ? 2 : 0;
+        if (rankA !== rankB) return rankB - rankA;
         const fa = a.featured ? 1 : 0;
         const fb = b.featured ? 1 : 0;
         if (fa !== fb) return fb - fa;

@@ -4,7 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, BookOpen, Clock, MapPin, Navigation } from "lucide-react";
-import type { OpenStatusInfo, Place } from "@/lib/types";
+import type { Place } from "@/lib/types";
 import { getPlaceMapUrl } from "@/lib/maps";
 import {
   CATEGORY_LABELS,
@@ -21,14 +21,20 @@ interface PlaceCardProps {
   priority?: boolean;
 }
 
+const emptySubscribe = () => () => {};
+
 export function PlaceCard({ place, priority = false }: PlaceCardProps) {
   const mapUrl = getPlaceMapUrl(place);
   const coverImage = place.images[0] || "/images/places/food.jpg";
-  const [openStatus, setOpenStatus] = React.useState<OpenStatusInfo | null>(null);
+  const isMounted = React.useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
 
-  React.useEffect(() => {
-    setOpenStatus(getPlaceOpenStatus(place.openingHours, new Date()));
-  }, [place.openingHours]);
+  const openStatus = isMounted
+    ? getPlaceOpenStatus(place.openingHours, new Date())
+    : null;
 
   const isClosed = openStatus !== null && !openStatus.isOpen;
 

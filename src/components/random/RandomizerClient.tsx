@@ -445,26 +445,28 @@ export function RandomizerClient({
                             sizes="(max-width: 1024px) 100vw, 600px"
                             className={cn(
                               "object-cover transition-all",
-                              !st.isOpen && "grayscale-[82%] contrast-90"
+                              st && !st.isOpen && "grayscale-[82%] contrast-90"
                             )}
                           />
                           <div className="absolute left-4 right-4 top-4 flex items-center justify-between gap-2">
                             <span className="rounded-full bg-[#FFD166] px-3.5 py-1 font-display text-xs font-extrabold text-[#242424] shadow-sm">
                               Kèo chốt cho bạn!
                             </span>
-                            <span
-                              className={cn(
-                                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-display text-xs font-extrabold shadow-sm",
-                                !st.isOpen
-                                  ? "border-[#242424]/20 bg-[#242424]/90 text-[#FFF8ED]"
-                                  : st.isClosingSoon
-                                    ? "border-[#242424]/15 bg-[#FFD166] text-[#242424]"
-                                    : "border-[#1E5631]/25 bg-[#B7E4C7] text-[#1E5631]"
-                              )}
-                            >
-                              <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-                              {st.label} · {st.detail}
-                            </span>
+                            {st && (
+                              <span
+                                className={cn(
+                                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-display text-xs font-extrabold shadow-sm",
+                                  !st.isOpen
+                                    ? "border-[#242424]/20 bg-[#242424]/90 text-[#FFF8ED]"
+                                    : st.isClosingSoon
+                                      ? "border-[#242424]/15 bg-[#FFD166] text-[#242424]"
+                                      : "border-[#1E5631]/25 bg-[#B7E4C7] text-[#1E5631]"
+                                )}
+                              >
+                                <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                                {st.label} · {st.detail}
+                              </span>
+                            )}
                           </div>
                         </>
                       );

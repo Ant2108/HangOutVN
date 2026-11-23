@@ -74,7 +74,7 @@ export function getMatchingRecommendationPool(
   return places.filter((place) => {
     if (input.onlyOpenNow) {
       const status = getPlaceOpenStatus(place.openingHours, refTime);
-      if (!status.isOpen) return false;
+      if (!status || !status.isOpen) return false;
     }
     if (input.province !== "all" && place.province !== input.province) {
       return false;
@@ -114,7 +114,7 @@ export function pickRandomRecommendation(
 
   const reasons: string[] = [];
   const openStatus = getPlaceOpenStatus(chosen.openingHours);
-  if (openStatus.isOpen) {
+  if (openStatus && openStatus.isOpen) {
     reasons.push(
       `Đang mở cửa ngay lúc này (${openStatus.detail.toLowerCase()})`
     );

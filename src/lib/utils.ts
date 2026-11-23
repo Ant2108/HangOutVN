@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { BudgetBucket, CategoryId } from "./types";
+import type { BudgetBucket, CategoryId, OpenStatusInfo } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -96,4 +96,130 @@ export function matchesBudgetBucket(pricePerPerson: number | undefined, bucket: 
     default:
       return true;
   }
+}
+
+function formatHHMM(totalMinutes: number): string {
+  const norm = ((totalMinutes % 1440) + 1440) % 1440;
+  const h = Math.floor(norm / 60);
+  const m = norm % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+export function getPlaceOpenStatus(
+  openingHours?: string,
+  now: Date = new Date()
+): OpenStatusInfo {
+  if (!openingHours || !openingHours.trim()) {
+    return {
+      isOpen: true,
+      isClosingSoon: false,
+      label: "Đang mở cửa",
+      detail: "Cả ngày",
+    };
+  }
+
+  const raw = openingHours.trim();
+  const lower = raw.toLowerCase();
+
+  if (lower.includes("24/7") || lower.includes("24h") || lower.includes("cả ngày")) {
+    return {
+      isOpen: true,
+      isClosingSoon: false,
+      label: "Đang mở cửa",
+      detail: "Mở 24/7",
+    };
+  }
+
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+
+  // Check midday break "(nghỉ trưa 14:00 - 15:00)"
+  const breakMatch = lower.match(
+    /nghỉ\s*trưa\s*(\d{1,2})(?:[:h](\d{2}))?\s*[-–~]\s*(\d{1,2})(?:[:h](\d{2}))?/
+  );
+  if (breakMatch) {
+    const bStart = parseInt(breakMatch[1], 10) * 60 + parseInt(breakMatch[2] || "0", 10);
+    const bEnd = parseInt(breakMatch[3], 10) * 60 + parseInt(breakMatch[4] || "0", 10);
+    if (nowMins >= bStart && nowMins < bEnd) {
+      return {
+        isOpen: false,
+        isClosingSoon: false,
+        label: "Nghỉ trưa",
+        detail: `Mở lại ${formatHHMM(bEnd)}`,
+      };
+    }
+  }
+
+  // Strip parenthetical notes before extracting main opening spans
+  const cleaned = raw.replace(/\([^)]*\)/g, " ");
+  const spanRegex =
+    /(\d{1,2})(?:[:h](\d{2}))?\s*[-–~]\s*(\d{1,2})(?:[:h](\d{2}))?/gi;
+
+  const spans: { open: number; close: number }[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = spanRegex.exec(cleaned)) !== null) {
+    const h1 = parseInt(match[1], 10);
+    const m1 = parseInt(match[2] || "0", 10);
+    const h2 = parseInt(match[3], 10);
+    const m2 = parseInt(match[4] || "0", 10);
+    if (h1 > 24 || h2 > 24) continue;
+    const open = h1 * 60 + m1;
+    let close = h2 * 60 + m2;
+    if (close === 0) close = 1440; // 00:00 -> midnight
+    spans.push({ open, close });
+  }
+
+  if (spans.length === 0) {
+    return {
+      isOpen: true,
+      isClosingSoon: false,
+      label: "Đang mở cửa",
+      detail: raw,
+    };
+  }
+
+  for (const span of spans) {
+    const isOvernight = span.close < span.open;
+    if (!isOvernight) {
+      if (nowMins >= span.open && nowMins < span.close) {
+        const minsLeft = span.close - nowMins;
+        const closingSoon = minsLeft <= 45;
+        return {
+          isOpen: true,
+          isClosingSoon: closingSoon,
+          label: closingSoon ? "Sắp đóng cửa" : "Đang mở cửa",
+          detail: `Đóng lúc ${formatHHMM(span.close)}`,
+        };
+      }
+    } else {
+      // Overnight span, e.g. 15:00 (900) -> 02:00 (120)
+      if (nowMins >= span.open || nowMins < span.close) {
+        const minsLeft =
+          nowMins >= span.open
+            ? 1440 - nowMins + span.close
+            : span.close - nowMins;
+        const closingSoon = minsLeft <= 45;
+        return {
+          isOpen: true,
+          isClosingSoon: closingSoon,
+          label: closingSoon ? "Sắp đóng cửa" : "Đang mở cửa",
+          detail: `Đóng lúc ${formatHHMM(span.close)}`,
+        };
+      }
+    }
+  }
+
+  // Closed right now -> find next opening time
+  const sortedByNextOpen = [...spans].sort((a, b) => {
+    const diffA = (a.open - nowMins + 1440) % 1440;
+    const diffB = (b.open - nowMins + 1440) % 1440;
+    return diffA - diffB;
+  });
+  const nextOpen = sortedByNextOpen[0].open;
+
+  return {
+    isOpen: false,
+    isClosingSoon: false,
+    label: "Đã đóng cửa",
+    detail: `Mở lại ${formatHHMM(nextOpen)}`,
+  };
 }

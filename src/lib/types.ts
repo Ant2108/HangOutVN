@@ -80,6 +80,7 @@ export interface ExploreFilters {
   budget: BudgetBucket;
   vibe: string;
   onlyWithMenu: boolean;
+  onlyOpenNow?: boolean;
   sort: SortOption;
 }
 
@@ -93,6 +94,14 @@ export interface RecommendationInput {
   companion: CompanionType;
   activity: ActivityType;
   vibe: string;
+  onlyOpenNow?: boolean;
+}
+
+export interface OpenStatusInfo {
+  isOpen: boolean;
+  isClosingSoon: boolean;
+  label: string;
+  detail: string;
 }
 
 export interface RecommendationResult {

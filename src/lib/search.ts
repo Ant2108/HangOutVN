@@ -1,5 +1,10 @@
 import type { ExploreFilters, Place } from "./types";
-import { getPricePerPerson, matchesBudgetBucket, removeVietnameseTones } from "./utils";
+import {
+  getPlaceOpenStatus,
+  getPricePerPerson,
+  matchesBudgetBucket,
+  removeVietnameseTones,
+} from "./utils";
 
 export interface IndexedPlace {
   place: Place;
@@ -28,8 +33,10 @@ export function buildSearchIndex(places: Place[]): IndexedPlace[] {
 
 export function filterAndSortPlaces(
   indexed: IndexedPlace[],
-  filters: ExploreFilters
+  filters: ExploreFilters,
+  now?: Date
 ): Place[] {
+  const refTime = now ?? new Date();
   const normalizedQuery = removeVietnameseTones(filters.query);
   const tokens = normalizedQuery ? normalizedQuery.split(/\s+/).filter(Boolean) : [];
 
@@ -37,6 +44,10 @@ export function filterAndSortPlaces(
 
   for (const item of indexed) {
     const { place, searchBlob } = item;
+
+    if (filters.onlyOpenNow && !getPlaceOpenStatus(place.openingHours, refTime).isOpen) {
+      continue;
+    }
 
     if (filters.province !== "all" && place.province !== filters.province) {
       continue;
@@ -92,6 +103,9 @@ export function filterAndSortPlaces(
     case "featured":
     default:
       matched.sort((a, b) => {
+        const openA = getPlaceOpenStatus(a.openingHours, refTime).isOpen ? 1 : 0;
+        const openB = getPlaceOpenStatus(b.openingHours, refTime).isOpen ? 1 : 0;
+        if (openA !== openB) return openB - openA;
         const fa = a.featured ? 1 : 0;
         const fb = b.featured ? 1 : 0;
         if (fa !== fb) return fb - fa;

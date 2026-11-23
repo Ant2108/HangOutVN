@@ -5,7 +5,12 @@ import type {
   RecommendationInput,
   RecommendationResult,
 } from "./types";
-import { BUDGET_OPTIONS, getPricePerPerson, matchesBudgetBucket } from "./utils";
+import {
+  BUDGET_OPTIONS,
+  getPlaceOpenStatus,
+  getPricePerPerson,
+  matchesBudgetBucket,
+} from "./utils";
 
 const ACTIVITY_TO_CATEGORY: Record<Exclude<ActivityType, "any">, string> = {
   eating: "food",
@@ -62,9 +67,15 @@ function matchesCompanion(place: Place, companion: CompanionType): boolean {
 
 export function getMatchingRecommendationPool(
   places: Place[],
-  input: RecommendationInput
+  input: RecommendationInput,
+  now?: Date
 ): Place[] {
+  const refTime = now ?? new Date();
   return places.filter((place) => {
+    if (input.onlyOpenNow) {
+      const status = getPlaceOpenStatus(place.openingHours, refTime);
+      if (!status.isOpen) return false;
+    }
     if (input.province !== "all" && place.province !== input.province) {
       return false;
     }
@@ -102,6 +113,12 @@ export function pickRandomRecommendation(
   const chosen = candidates[Math.floor(Math.random() * candidates.length)];
 
   const reasons: string[] = [];
+  const openStatus = getPlaceOpenStatus(chosen.openingHours);
+  if (openStatus.isOpen) {
+    reasons.push(
+      `Đang mở cửa ngay lúc này (${openStatus.detail.toLowerCase()})`
+    );
+  }
   if (input.province !== "all") {
     reasons.push(`Nằm ngay tại ${chosen.province}${chosen.district ? ` (${chosen.district})` : ""}`);
   } else {

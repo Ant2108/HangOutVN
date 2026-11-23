@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   BookOpen,
+  Clock,
   RotateCcw,
   Search,
   SlidersHorizontal,
@@ -20,7 +21,7 @@ import type {
   SortOption,
 } from "@/lib/types";
 import { buildSearchIndex, filterAndSortPlaces } from "@/lib/search";
-import { BUDGET_OPTIONS, cn } from "@/lib/utils";
+import { BUDGET_OPTIONS, cn, getPlaceOpenStatus } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -37,6 +38,7 @@ const DEFAULT_FILTERS: ExploreFilters = {
   budget: "all",
   vibe: "all",
   onlyWithMenu: false,
+  onlyOpenNow: false,
   sort: "featured",
 };
 
@@ -95,6 +97,7 @@ export function ExploreClient({
     filters.budget !== "all",
     filters.vibe !== "all",
     filters.onlyWithMenu,
+    Boolean(filters.onlyOpenNow),
     filters.query.trim().length > 0,
   ].filter(Boolean).length;
 
@@ -113,6 +116,11 @@ export function ExploreClient({
 
   const menuPlaceCount = useMemo(
     () => places.filter((p) => Boolean(p.menuUrl)).length,
+    [places]
+  );
+
+  const openNowPlaceCount = useMemo(
+    () => places.filter((p) => getPlaceOpenStatus(p.openingHours).isOpen).length,
     [places]
   );
 
@@ -181,8 +189,28 @@ export function ExploreClient({
         </div>
       )}
 
-      {/* Menu Availability Filter */}
-      <div>
+      {/* Open Now & Menu Availability Filters */}
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={() => updateFilter("onlyOpenNow", !filters.onlyOpenNow)}
+          aria-pressed={Boolean(filters.onlyOpenNow)}
+          className={cn(
+            "flex min-h-[42px] w-full items-center justify-between rounded-2xl border px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors",
+            filters.onlyOpenNow
+              ? "border-[#242424] bg-[#B7E4C7] text-[#1E5631]"
+              : "border-[#242424]/15 bg-[#FFF8ED] text-[#242424] hover:bg-[#F6EBD8]"
+          )}
+        >
+          <span className="inline-flex items-center gap-2">
+            <Clock className="h-4 w-4 text-[#1E5631]" aria-hidden="true" />
+            Ẩn quán đã đóng cửa
+          </span>
+          <span className="rounded-full bg-white/85 px-2 py-0.5 text-[11px] font-extrabold text-[#1E5631]">
+            {openNowPlaceCount} mở
+          </span>
+        </button>
+
         <button
           type="button"
           onClick={() => updateFilter("onlyWithMenu", !filters.onlyWithMenu)}

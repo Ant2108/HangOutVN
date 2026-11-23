@@ -3,7 +3,14 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { BookOpen, ExternalLink, X } from "lucide-react";
+import {
+  BookOpen,
+  ExternalLink,
+  RotateCcw,
+  X,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MenuViewerProps {
@@ -13,52 +20,61 @@ interface MenuViewerProps {
   className?: string;
 }
 
-function getEmbedInfo(rawUrl: string): {
-  canEmbed: boolean;
-  embedUrl: string;
+function getMenuDisplayInfo(rawUrl: string): {
+  mode: "image" | "iframe" | "external";
+  src: string;
   sourceLabel: string;
 } {
+  if (!rawUrl) {
+    return { mode: "external", src: "", sourceLabel: "Menu" };
+  }
+
+  // Local static menu images (/images/menus/...) -> instant image mode!
+  if (
+    rawUrl.startsWith("/") ||
+    /\.(png|jpe?g|webp|gif|avif)(\?|$)/i.test(rawUrl)
+  ) {
+    return {
+      mode: "image",
+      src: rawUrl,
+      sourceLabel: "Thực đơn & Bảng giá",
+    };
+  }
+
   try {
     const u = new URL(rawUrl);
     const host = u.hostname.toLowerCase();
 
-    // Google Drive file link -> official /preview embed URL
     if (host.includes("drive.google.com")) {
       const match = u.pathname.match(/\/file\/d\/([^/]+)/);
       if (match && match[1]) {
         return {
-          canEmbed: true,
-          embedUrl: `https://drive.google.com/file/d/${match[1]}/preview`,
+          mode: "iframe",
+          src: `https://drive.google.com/file/d/${match[1]}/preview`,
           sourceLabel: "Google Drive Menu",
         };
       }
     }
 
-    // Direct image URLs
-    if (/\.(png|jpe?g|webp|gif)(\?|$)/i.test(u.pathname)) {
+    if (
+      !host.includes("tiktok.com") &&
+      !host.includes("facebook.com") &&
+      !host.includes("shopeefood.vn")
+    ) {
       return {
-        canEmbed: true,
-        embedUrl: rawUrl,
-        sourceLabel: "Ảnh Menu",
-      };
-    }
-
-    // Known embeddable web menus (e.g. restaurant websites)
-    if (!host.includes("tiktok.com") && !host.includes("facebook.com") && !host.includes("shopeefood.vn")) {
-      return {
-        canEmbed: true,
-        embedUrl: rawUrl,
+        mode: "iframe",
+        src: rawUrl,
         sourceLabel: host.replace(/^www\./, ""),
       };
     }
 
     return {
-      canEmbed: false,
-      embedUrl: rawUrl,
+      mode: "external",
+      src: rawUrl,
       sourceLabel: host.replace(/^www\./, ""),
     };
   } catch {
-    return { canEmbed: false, embedUrl: rawUrl, sourceLabel: "Menu" };
+    return { mode: "external", src: rawUrl, sourceLabel: "Menu" };
   }
 }
 
@@ -69,10 +85,12 @@ export function MenuViewer({
   className,
 }: MenuViewerProps) {
   const [open, setOpen] = React.useState(false);
-  const embed = React.useMemo(() => getEmbedInfo(menuUrl), [menuUrl]);
+  const [zoom, setZoom] = React.useState(1);
+  const info = React.useMemo(() => getMenuDisplayInfo(menuUrl), [menuUrl]);
 
   React.useEffect(() => {
     if (!open) return;
+    setZoom(1);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
@@ -89,7 +107,7 @@ export function MenuViewer({
     <AnimatePresence>
       {open && (
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center p-4 sm:p-6"
+          className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-6"
           role="dialog"
           aria-modal="true"
           aria-label={`Menu của ${placeName}`}
@@ -99,70 +117,113 @@ export function MenuViewer({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setOpen(false)}
-            className="fixed inset-0 bg-[#242424]/60 backdrop-blur-xs"
+            className="fixed inset-0 bg-[#242424]/70 backdrop-blur-xs"
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 12 }}
-            transition={{ duration: 0.2 }}
-            className="relative z-10 flex h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-[26px] border border-[#242424]/18 bg-[#FFF8ED] shadow-2xl"
+            transition={{ duration: 0.18 }}
+            className="relative z-10 flex h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-[26px] border border-[#242424]/18 bg-[#FFF8ED] shadow-2xl"
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between gap-4 border-b border-[#242424]/10 bg-white px-5 py-4 sm:px-6">
-              <div className="min-w-0">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#242424]/10 bg-white px-4 py-3.5 sm:px-6 sm:py-4">
+              <div className="min-w-0 flex-1">
                 <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#D84B20]">
                   <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
-                  {embed.sourceLabel}
+                  {info.sourceLabel}
                 </span>
                 <h3 className="truncate font-display text-base font-extrabold text-[#242424] sm:text-lg">
                   Menu — {placeName}
                 </h3>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                {info.mode === "image" && (
+                  <div className="hidden sm:flex items-center gap-1 rounded-full border border-[#242424]/14 bg-[#FFF8ED] px-2 py-1">
+                    <button
+                      type="button"
+                      onClick={() => setZoom((z) => Math.max(0.75, +(z - 0.25).toFixed(2)))}
+                      aria-label="Thu nhỏ ảnh menu"
+                      className="flex h-7 w-7 items-center justify-center rounded-full text-[#242424] hover:bg-[#F6EBD8] cursor-pointer"
+                    >
+                      <ZoomOut className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="min-w-[44px] text-center font-display text-xs font-bold text-[#242424]">
+                      {Math.round(zoom * 100)}%
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setZoom((z) => Math.min(2.25, +(z + 0.25).toFixed(2)))}
+                      aria-label="Phóng to ảnh menu"
+                      className="flex h-7 w-7 items-center justify-center rounded-full text-[#242424] hover:bg-[#F6EBD8] cursor-pointer"
+                    >
+                      <ZoomIn className="h-3.5 w-3.5" />
+                    </button>
+                    {zoom !== 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setZoom(1)}
+                        aria-label="Đặt lại kích thước"
+                        className="flex h-7 w-7 items-center justify-center rounded-full text-[#5C564F] hover:bg-[#F6EBD8] cursor-pointer"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 <a
                   href={menuUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[#242424]/16 bg-[#FFF8ED] px-4 font-display text-xs font-bold text-[#242424] hover:bg-[#FFD166]/60 transition-colors"
+                  className="inline-flex h-9 sm:h-10 items-center gap-1.5 rounded-full border border-[#242424]/16 bg-[#FFF8ED] px-3.5 sm:px-4 font-display text-xs font-bold text-[#242424] hover:bg-[#FFD166]/60 transition-colors"
                 >
-                  Mở tab mới
+                  Mở ảnh gốc
                   <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                 </a>
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label="Đóng Menu"
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-[#242424]/15 bg-white text-[#242424] cursor-pointer hover:bg-[#F6EBD8]"
+                  className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full border border-[#242424]/15 bg-white text-[#242424] cursor-pointer hover:bg-[#F6EBD8]"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
             </div>
 
-            {/* Preview Body */}
-            <div className="relative flex-1 bg-[#F6EBD8]">
-              {embed.canEmbed ? (
+            {/* Instant Image or Embed Body */}
+            <div className="relative flex-1 overflow-auto bg-[#242424]/95 p-3 sm:p-6">
+              {info.mode === "image" ? (
+                <div className="flex min-h-full items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={info.src}
+                    alt={`Thực đơn của ${placeName}`}
+                    style={{
+                      transform: `scale(${zoom})`,
+                      transformOrigin: "top center",
+                    }}
+                    className="max-h-[75vh] w-auto max-w-full rounded-xl bg-white object-contain shadow-xl transition-transform duration-150"
+                  />
+                </div>
+              ) : info.mode === "iframe" ? (
                 <iframe
-                  src={embed.embedUrl}
+                  src={info.src}
                   title={`Menu của ${placeName}`}
-                  className="h-full w-full border-0"
+                  className="h-full w-full rounded-xl border-0 bg-white"
                   allow="autoplay"
                   loading="lazy"
                 />
               ) : (
-                <div className="flex h-full flex-col items-center justify-center p-8 text-center">
+                <div className="flex h-full flex-col items-center justify-center p-8 text-center text-[#FFF8ED]">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#FFD166] text-[#242424]">
                     <BookOpen className="h-7 w-7" aria-hidden="true" />
                   </div>
-                  <h4 className="mt-4 font-display text-xl font-extrabold text-[#242424]">
-                    Xem Menu trực tiếp trên {embed.sourceLabel}
+                  <h4 className="mt-4 font-display text-xl font-extrabold">
+                    Xem Menu trực tiếp trên {info.sourceLabel}
                   </h4>
-                  <p className="mt-2 max-w-md text-sm text-[#5C564F]">
-                    Trang nguồn ({embed.sourceLabel}) không cho phép nhúng trực tiếp.
-                    Nhấn nút bên dưới để mở Menu đầy đủ trong tab mới.
-                  </p>
                   <a
                     href={menuUrl}
                     target="_blank"

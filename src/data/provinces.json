@@ -1,0 +1,308 @@
+[
+  {
+    "code": 1,
+    "slug": "tuyen-quang",
+    "name": "Tuyên Quang",
+    "region": "Trung du & Miền núi phía Bắc",
+    "mergedFrom": "Hà Giang + Tuyên Quang",
+    "placeCount": 4,
+    "avgPricePerPerson": 85833
+  },
+  {
+    "code": 2,
+    "slug": "cao-bang",
+    "name": "Cao Bằng",
+    "region": "Trung du & Miền núi phía Bắc",
+    "mergedFrom": "Cao Bằng (giữ nguyên)",
+    "placeCount": 4,
+    "avgPricePerPerson": 84167
+  },
+  {
+    "code": 3,
+    "slug": "lai-chau",
+    "name": "Lai Châu",
+    "region": "Trung du & Miền núi phía Bắc",
+    "mergedFrom": "Lai Châu (giữ nguyên)",
+    "placeCount": 4,
+    "avgPricePerPerson": 95833
+  },
+  {
+    "code": 4,
+    "slug": "lao-cai",
+    "name": "Lào Cai",
+    "region": "Trung du & Miền núi phía Bắc",
+    "mergedFrom": "Lào Cai + Yên Bái",
+    "placeCount": 4,
+    "avgPricePerPerson": 115833
+  },
+  {
+    "code": 5,
+    "slug": "thai-nguyen",
+    "name": "Thái Nguyên",
+    "region": "Trung du & Miền núi phía Bắc",
+    "mergedFrom": "Bắc Kạn + Thái Nguyên",
+    "placeCount": 4,
+    "avgPricePerPerson": 98333
+  },
+  {
+    "code": 6,
+    "slug": "dien-bien",
+    "name": "Điện Biên",
+    "region": "Trung du & Miền núi phía Bắc",
+    "mergedFrom": "Điện Biên (giữ nguyên)",
+    "placeCount": 4,
+    "avgPricePerPerson": 94167
+  },
+  {
+    "code": 7,
+    "slug": "lang-son",
+    "name": "Lạng Sơn",
+    "region": "Trung du & Miền núi phía Bắc",
+    "mergedFrom": "Lạng Sơn (giữ nguyên)",
+    "placeCount": 4,
+    "avgPricePerPerson": 118750
+  },
+  {
+    "code": 8,
+    "slug": "son-la",
+    "name": "Sơn La",
+    "region": "Trung du & Miền núi phía Bắc",
+    "mergedFrom": "Sơn La (giữ nguyên)",
+    "placeCount": 4,
+    "avgPricePerPerson": 91667
+  },
+  {
+    "code": 9,
+    "slug": "phu-tho",
+    "name": "Phú Thọ",
+    "region": "Trung du & Miền núi phía Bắc",
+    "mergedFrom": "Hòa Bình + Vĩnh Phúc + Phú Thọ",
+    "placeCount": 4,
+    "avgPricePerPerson": 66667
+  },
+  {
+    "code": 10,
+    "slug": "bac-ninh",
+    "name": "Bắc Ninh",
+    "region": "Đồng bằng sông Hồng",
+    "mergedFrom": "Bắc Giang + Bắc Ninh",
+    "placeCount": 4,
+    "avgPricePerPerson": 102083
+  },
+  {
+    "code": 11,
+    "slug": "quang-ninh",
+    "name": "Quảng Ninh",
+    "region": "Đồng bằng sông Hồng",
+    "mergedFrom": "Quảng Ninh (giữ nguyên)",
+    "placeCount": 4,
+    "avgPricePerPerson": 110833
+  },
+  {
+    "code": 12,
+    "slug": "tp-ha-noi",
+    "name": "TP. Hà Nội",
+    "region": "Đồng bằng sông Hồng",
+    "mergedFrom": "Hà Nội (giữ nguyên)",
+    "placeCount": 373,
+    "avgPricePerPerson": 61376
+  },
+  {
+    "code": 13,
+    "slug": "tp-hai-phong",
+    "name": "TP. Hải Phòng",
+    "region": "Đồng bằng sông Hồng",
+    "mergedFrom": "Hải Dương + TP. Hải Phòng",
+    "placeCount": 7,
+    "avgPricePerPerson": 71875
+  },
+  {
+    "code": 14,
+    "slug": "hung-yen",
+    "name": "Hưng Yên",
+    "region": "Đồng bằng sông Hồng",
+    "mergedFrom": "Thái Bình + Hưng Yên",
+    "placeCount": 4,
+    "avgPricePerPerson": 45000
+  },
+  {
+    "code": 15,
+    "slug": "ninh-binh",
+    "name": "Ninh Bình",
+    "region": "Đồng bằng sông Hồng",
+    "mergedFrom": "Hà Nam + Ninh Bình + Nam Định",
+    "placeCount": 4,
+    "avgPricePerPerson": 50000
+  },
+  {
+    "code": 16,
+    "slug": "thanh-hoa",
+    "name": "Thanh Hóa",
+    "region": "Bắc Trung Bộ & Duyên hải miền Trung",
+    "mergedFrom": "Thanh Hóa (giữ nguyên)",
+    "placeCount": 4,
+    "avgPricePerPerson": 120833
+  },
+  {
+    "code": 17,
+    "slug": "nghe-an",
+    "name": "Nghệ An",
+    "region": "Bắc Trung Bộ & Duyên hải miền Trung",
+    "mergedFrom": "Nghệ An (giữ nguyên)",
+    "placeCount": 4,
+    "avgPricePerPerson": 107500
+  },
+  {
+    "code": 18,
+    "slug": "ha-tinh",
+    "name": "Hà Tĩnh",
+    "region": "Bắc Trung Bộ & Duyên hải miền Trung",
+    "mergedFrom": "Hà Tĩnh (giữ nguyên)",
+    "placeCount": 4,
+    "avgPricePerPerson": 136667
+  },
+  {
+    "code": 19,
+    "slug": "quang-tri",
+    "name": "Quảng Trị",
+    "region": "Bắc Trung Bộ & Duyên hải miền Trung",
+    "mergedFrom": "Quảng Bình + Quảng Trị",
+    "placeCount": 4,
+    "avgPricePerPerson": 86667
+  },
+  {
+    "code": 20,
+    "slug": "tp-hue",
+    "name": "TP. Huế",
+    "region": "Bắc Trung Bộ & Duyên hải miền Trung",
+    "mergedFrom": "Huế (giữ nguyên)",
+    "placeCount": 7,
+    "avgPricePerPerson": 89167
+  },
+  {
+    "code": 21,
+    "slug": "tp-da-nang",
+    "name": "TP. Đà Nẵng",
+    "region": "Bắc Trung Bộ & Duyên hải miền Trung",
+    "mergedFrom": "Quảng Nam + TP. Đà Nẵng",
+    "placeCount": 174,
+    "avgPricePerPerson": 71637
+  },
+  {
+    "code": 22,
+    "slug": "quang-ngai",
+    "name": "Quảng Ngãi",
+    "region": "Bắc Trung Bộ & Duyên hải miền Trung",
+    "mergedFrom": "Quảng Ngãi + Kon Tum",
+    "placeCount": 4,
+    "avgPricePerPerson": 80833
+  },
+  {
+    "code": 23,
+    "slug": "gia-lai",
+    "name": "Gia Lai",
+    "region": "Tây Nguyên",
+    "mergedFrom": "Gia Lai + Bình Định",
+    "placeCount": 4,
+    "avgPricePerPerson": 45833
+  },
+  {
+    "code": 24,
+    "slug": "dak-lak",
+    "name": "Đắk Lắk",
+    "region": "Tây Nguyên",
+    "mergedFrom": "Phú Yên + Đắk Lắk",
+    "placeCount": 4,
+    "avgPricePerPerson": 130833
+  },
+  {
+    "code": 25,
+    "slug": "khanh-hoa",
+    "name": "Khánh Hòa",
+    "region": "Bắc Trung Bộ & Duyên hải miền Trung",
+    "mergedFrom": "Khánh Hòa + Ninh Thuận",
+    "placeCount": 6,
+    "avgPricePerPerson": 93500
+  },
+  {
+    "code": 26,
+    "slug": "lam-dong",
+    "name": "Lâm Đồng",
+    "region": "Tây Nguyên",
+    "mergedFrom": "Đắk Nông + Lâm Đồng + Bình Thuận",
+    "placeCount": 8,
+    "avgPricePerPerson": 78571
+  },
+  {
+    "code": 27,
+    "slug": "dong-nai",
+    "name": "Đồng Nai",
+    "region": "Đông Nam Bộ",
+    "mergedFrom": "Bình Phước + Đồng Nai",
+    "placeCount": 6,
+    "avgPricePerPerson": 72000
+  },
+  {
+    "code": 28,
+    "slug": "tay-ninh",
+    "name": "Tây Ninh",
+    "region": "Đông Nam Bộ",
+    "mergedFrom": "Long An + Tây Ninh",
+    "placeCount": 6,
+    "avgPricePerPerson": 78500
+  },
+  {
+    "code": 29,
+    "slug": "tp-ho-chi-minh",
+    "name": "TP. Hồ Chí Minh",
+    "region": "Đông Nam Bộ",
+    "mergedFrom": "Bình Dương + TP.HCM + Bà Rịa - Vũng Tàu",
+    "placeCount": 838,
+    "avgPricePerPerson": 51297
+  },
+  {
+    "code": 30,
+    "slug": "dong-thap",
+    "name": "Đồng Tháp",
+    "region": "Đồng bằng sông Cửu Long",
+    "mergedFrom": "Tiền Giang + Đồng Tháp",
+    "placeCount": 6,
+    "avgPricePerPerson": 79000
+  },
+  {
+    "code": 31,
+    "slug": "an-giang",
+    "name": "An Giang",
+    "region": "Đồng bằng sông Cửu Long",
+    "mergedFrom": "Kiên Giang + An Giang",
+    "placeCount": 6,
+    "avgPricePerPerson": 74000
+  },
+  {
+    "code": 32,
+    "slug": "vinh-long",
+    "name": "Vĩnh Long",
+    "region": "Đồng bằng sông Cửu Long",
+    "mergedFrom": "Bến Tre + Vĩnh Long + Trà Vinh",
+    "placeCount": 4,
+    "avgPricePerPerson": 52500
+  },
+  {
+    "code": 33,
+    "slug": "tp-can-tho",
+    "name": "TP. Cần Thơ",
+    "region": "Đồng bằng sông Cửu Long",
+    "mergedFrom": "Sóc Trăng + Hậu Giang + TP. Cần Thơ",
+    "placeCount": 7,
+    "avgPricePerPerson": 69167
+  },
+  {
+    "code": 34,
+    "slug": "ca-mau",
+    "name": "Cà Mau",
+    "region": "Đồng bằng sông Cửu Long",
+    "mergedFrom": "Bạc Liêu + Cà Mau",
+    "placeCount": 4,
+    "avgPricePerPerson": 37500
+  }
+]

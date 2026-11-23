@@ -1,0 +1,37 @@
+{
+  "generatedAt": "2026-11-23T13:08:28.878Z",
+  "sourceFile": "hangout-vn-data.xlsx",
+  "sheetUsed": "Du_Lieu_Dia_Diem",
+  "detectedColumns": {
+    "id": 0,
+    "region": 1,
+    "province": 2,
+    "district": 3,
+    "name": 4,
+    "primaryType": 5,
+    "subTag": 6,
+    "budgetTier": 7,
+    "avgPrice": 8,
+    "priceRange": 9,
+    "openingHours": 10,
+    "address": 11,
+    "menu": 12,
+    "description": 13,
+    "sourceChannel": 14,
+    "sourceRef": 15
+  },
+  "totalValidPlaces": 1362,
+  "totalProvinces": 34,
+  "categoryCounts": {
+    "food": 1070,
+    "coffee": 260,
+    "date": 149,
+    "chill": 92,
+    "fun": 66,
+    "travel": 64
+  },
+  "potentialDuplicatesCount": 0,
+  "potentialDuplicatesSample": [],
+  "validationErrorsCount": 0,
+  "validationErrors": []
+}

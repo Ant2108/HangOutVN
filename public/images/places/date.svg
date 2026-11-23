@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" fill="none">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="800" y2="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFB4C2"/>
+      <stop offset="52%" stop-color="#FFD166"/>
+      <stop offset="100%" stop-color="#FF7043"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.5" cy="0.48" r="0.32">
+      <stop offset="0%" stop-color="#FFF8ED"/>
+      <stop offset="100%" stop-color="#FFD166" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#sky)"/>
+  <circle cx="400" cy="270" r="190" fill="url(#sun)"/>
+  <circle cx="400" cy="270" r="95" fill="#FFF8ED" fill-opacity="0.92"/>
+  <path d="M0 370 L110 310 L190 350 L290 295 L410 345 L530 285 L660 340 L800 300 L800 600 L0 600 Z" fill="#242424" fill-opacity="0.88"/>
+  <rect x="0" y="455" width="800" height="145" fill="#242424"/>
+  <!-- Rooftop table & two glasses -->
+  <ellipse cx="400" cy="545" rx="220" ry="42" fill="#FFF8ED" fill-opacity="0.14"/>
+  <path d="M310 475 L348 475 L340 538 L318 538 Z" fill="#FFF8ED"/>
+  <path d="M313 494 L345 494 L340 538 L318 538 Z" fill="#FF7043"/>
+  <line x1="335" y1="450" x2="328" y2="530" stroke="#242424" stroke-width="5" stroke-linecap="round"/>
+  <path d="M452 475 L490 475 L482 538 L460 538 Z" fill="#FFF8ED"/>
+  <path d="M455 496 L487 496 L482 538 L460 538 Z" fill="#FFB4C2"/>
+  <line x1="468" y1="450" x2="474" y2="530" stroke="#242424" stroke-width="5" stroke-linecap="round"/>
+  <!-- Fairy lights -->
+  <path d="M0 110 Q200 185 400 120 Q600 185 800 105" stroke="#242424" stroke-width="2.5" stroke-opacity="0.5"/>
+  <circle cx="120" cy="142" r="9" fill="#FFF8ED"/>
+  <circle cx="240" cy="154" r="9" fill="#FFF8ED"/>
+  <circle cx="400" cy="120" r="10" fill="#FFF8ED"/>
+  <circle cx="560" cy="152" r="9" fill="#FFF8ED"/>
+  <circle cx="685" cy="138" r="9" fill="#FFF8ED"/>
+</svg>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" fill="none">
+  <rect width="800" height="600" fill="#FFF8ED"/>
+  <circle cx="170" cy="150" r="120" fill="#FFB4C2" fill-opacity="0.55"/>
+  <circle cx="655" cy="445" r="145" fill="#B7E4C7" fill-opacity="0.65"/>
+  <rect x="90" y="385" width="620" height="135" rx="34" fill="#F6EBD8" stroke="#242424" stroke-width="4"/>
+  <!-- Pottery ceramic vase -->
+  <path d="M235 385 C215 315 245 255 268 235 L332 235 C355 255 385 315 365 385 Z" fill="#FF7043" stroke="#242424" stroke-width="4"/>
+  <ellipse cx="300" cy="235" rx="36" ry="12" fill="#FFD166" stroke="#242424" stroke-width="4"/>
+  <!-- Scented candle jar -->
+  <rect x="445" y="290" width="120" height="95" rx="22" fill="#FFD166" stroke="#242424" stroke-width="4"/>
+  <rect x="475" y="325" width="60" height="28" rx="8" fill="#FFF8ED"/>
+  <path d="M505 278 C492 260 505 235 505 235 C505 235 518 260 505 278 Z" fill="#FF7043" stroke="#242424" stroke-width="3"/>
+  <!-- Sparkles -->
+  <path d="M405 160 L413 185 L438 193 L413 201 L405 226 L397 201 L372 193 L397 185 Z" fill="#242424"/>
+  <circle cx="595" cy="175" r="16" fill="#FFB4C2" stroke="#242424" stroke-width="3"/>
+</svg>

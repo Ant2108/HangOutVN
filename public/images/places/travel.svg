@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" fill="none">
+  <defs>
+    <linearGradient id="trSky" x1="0" y1="0" x2="0" y2="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF8ED"/>
+      <stop offset="55%" stop-color="#FFD166" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#FFB4C2" stop-opacity="0.7"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#trSky)"/>
+  <circle cx="560" cy="170" r="82" fill="#FF7043"/>
+  <!-- Layered Vietnamese highland mountains -->
+  <path d="M0 430 L170 250 L330 375 L510 215 L690 365 L800 285 L800 600 L0 600 Z" fill="#B7E4C7"/>
+  <path d="M0 475 L190 330 L390 450 L600 310 L800 430 L800 600 L0 600 Z" fill="#2D6A4F" fill-opacity="0.85"/>
+  <!-- Soft sea of clouds -->
+  <ellipse cx="180" cy="450" rx="170" ry="38" fill="#FFF8ED" fill-opacity="0.9"/>
+  <ellipse cx="440" cy="480" rx="220" ry="44" fill="#FFF8ED" fill-opacity="0.92"/>
+  <ellipse cx="690" cy="455" rx="165" ry="36" fill="#FFF8ED" fill-opacity="0.88"/>
+  <!-- Winding scenic path -->
+  <path d="M360 600 C375 535 450 520 420 470" stroke="#FF7043" stroke-width="10" stroke-linecap="round"/>
+</svg>

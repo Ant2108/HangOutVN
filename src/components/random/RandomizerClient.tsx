@@ -1,0 +1,530 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  ArrowUpRight,
+  CheckCircle2,
+  Coffee,
+  Dices,
+  Heart,
+  MapPin,
+  PartyPopper,
+  RefreshCw,
+  RotateCcw,
+  Sparkles,
+  Trees,
+  Users,
+  Utensils,
+} from "lucide-react";
+import type {
+  ActivityType,
+  BudgetBucket,
+  CompanionType,
+  Place,
+  Province,
+  RecommendationInput,
+  RecommendationResult,
+} from "@/lib/types";
+import {
+  getMatchingRecommendationPool,
+  pickRandomRecommendation,
+} from "@/lib/recommender";
+import {
+  BUDGET_OPTIONS,
+  CATEGORY_LABELS,
+  cn,
+  formatPricePerPerson,
+  getPricePerPerson,
+} from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
+import { GoogleMapsActions } from "@/components/places/GoogleMapsActions";
+import { MenuViewer } from "@/components/places/MenuViewer";
+
+interface RandomizerClientProps {
+  places: Place[];
+  provinces: Province[];
+  vibes: string[];
+}
+
+const COMPANIONS: { value: CompanionType; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { value: "any", label: "Bất kỳ", icon: Sparkles },
+  { value: "lover", label: "Người yêu", icon: Heart },
+  { value: "friends", label: "Hội bạn", icon: Users },
+  { value: "family", label: "Gia đình", icon: Users },
+];
+
+const ACTIVITIES: { value: ActivityType; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { value: "any", label: "Gì cũng được", icon: Sparkles },
+  { value: "eating", label: "Ăn uống", icon: Utensils },
+  { value: "coffee", label: "Cà phê", icon: Coffee },
+  { value: "date", label: "Hẹn hò", icon: Heart },
+  { value: "chill", label: "Chill", icon: Trees },
+  { value: "entertainment", label: "Vui chơi", icon: PartyPopper },
+];
+
+const INITIAL_INPUT: RecommendationInput = {
+  province: "all",
+  district: "all",
+  budget: "all",
+  companion: "any",
+  activity: "any",
+  vibe: "all",
+};
+
+export function RandomizerClient({
+  places,
+  provinces,
+  vibes,
+}: RandomizerClientProps) {
+  const [input, setInput] = useState<RecommendationInput>(INITIAL_INPUT);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [rollingName, setRollingName] = useState<string>("");
+  const [result, setResult] = useState<RecommendationResult | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  const districtsForProvince = useMemo(() => {
+    if (input.province === "all") return [];
+    const counts = new Map<string, number>();
+    for (const p of places) {
+      if (p.province === input.province && p.district) {
+        counts.set(p.district, (counts.get(p.district) || 0) + 1);
+      }
+    }
+    return Array.from(counts.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [places, input.province]);
+
+  const matchingPool = useMemo(
+    () => getMatchingRecommendationPool(places, input),
+    [places, input]
+  );
+
+  const handleGenerate = () => {
+    if (timerRef.current) {
+      window.clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    setHasSearched(true);
+
+    if (matchingPool.length === 0) {
+      setResult(null);
+      setIsSpinning(false);
+      return;
+    }
+
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (prefersReduced) {
+      setResult(pickRandomRecommendation(places, input, result?.place.id));
+      return;
+    }
+
+    setIsSpinning(true);
+    let ticks = 0;
+    const totalTicks = 12;
+
+    timerRef.current = window.setInterval(() => {
+      ticks += 1;
+      const preview = matchingPool[Math.floor(Math.random() * matchingPool.length)];
+      setRollingName(preview.name);
+
+      if (ticks >= totalTicks) {
+        if (timerRef.current) window.clearInterval(timerRef.current);
+        timerRef.current = null;
+        const picked = pickRandomRecommendation(places, input, result?.place.id);
+        setResult(picked);
+        setIsSpinning(false);
+      }
+    }, 65);
+  };
+
+  const resetAll = () => {
+    setInput(INITIAL_INPUT);
+    setResult(null);
+    setHasSearched(false);
+  };
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 pb-20 pt-28 sm:px-6 sm:pt-32 lg:px-8">
+      {/* Header */}
+      <div className="mx-auto max-w-3xl text-center">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#242424]/15 bg-[#FFD166] px-4 py-1.5 font-display text-xs font-extrabold uppercase tracking-wider text-[#242424]">
+          <Dices className="h-3.5 w-3.5" aria-hidden="true" />
+          Chốt kèo trong 1 giây
+        </span>
+        <h1 className="mt-4 font-display text-4xl font-extrabold tracking-tight text-[#242424] sm:text-6xl">
+          Đi đâu hôm nay?
+        </h1>
+        <p className="mt-3 text-sm text-[#5C564F] sm:text-base">
+          Chọn đúng nhu cầu của bạn bên dưới — HANGOUT VN sẽ lọc từ dữ liệu thật
+          và chọn ngẫu nhiên một địa điểm khớp 100% tiêu chí.
+        </p>
+      </div>
+
+      <div className="mt-10 grid gap-8 lg:grid-cols-12">
+        {/* Left Controls Panel */}
+        <div className="rounded-[26px] border border-[#242424]/14 bg-white p-6 sm:p-8 lg:col-span-5">
+          <div className="space-y-6">
+            {/* Province */}
+            <div>
+              <label
+                htmlFor="random-province"
+                className="mb-2 block font-display text-xs font-bold uppercase tracking-wider text-[#5C564F]"
+              >
+                1. Tỉnh / Thành phố
+              </label>
+              <Select
+                id="random-province"
+                value={input.province}
+                onChange={(e) =>
+                  setInput((p) => ({ ...p, province: e.target.value, district: "all" }))
+                }
+              >
+                <option value="all">Toàn quốc (34 tỉnh/thành)</option>
+                {provinces.map((prov) => (
+                  <option key={prov.slug} value={prov.name}>
+                    {prov.name} ({prov.placeCount})
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            {/* District (optional when a province has multiple districts) */}
+            {districtsForProvince.length > 1 && (
+              <div>
+                <label
+                  htmlFor="random-district"
+                  className="mb-2 block font-display text-xs font-bold uppercase tracking-wider text-[#5C564F]"
+                >
+                  Quận / Huyện / Khu vực ({districtsForProvince.length})
+                </label>
+                <Select
+                  id="random-district"
+                  value={input.district}
+                  onChange={(e) => setInput((p) => ({ ...p, district: e.target.value }))}
+                >
+                  <option value="all">Tất cả quận tại {input.province}</option>
+                  {districtsForProvince.map((d) => (
+                    <option key={d.name} value={d.name}>
+                      {d.name} ({d.count})
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            )}
+
+            {/* Budget */}
+            <div>
+              <label
+                htmlFor="random-budget"
+                className="mb-2 block font-display text-xs font-bold uppercase tracking-wider text-[#5C564F]"
+              >
+                2. Ngân sách dự kiến (1 người)
+              </label>
+              <Select
+                id="random-budget"
+                value={input.budget}
+                onChange={(e) =>
+                  setInput((p) => ({ ...p, budget: e.target.value as BudgetBucket }))
+                }
+              >
+                {BUDGET_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            {/* Companion */}
+            <div>
+              <p className="mb-2.5 font-display text-xs font-bold uppercase tracking-wider text-[#5C564F]">
+                3. Bạn đi cùng ai?
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {COMPANIONS.map((c) => {
+                  const Icon = c.icon;
+                  const active = input.companion === c.value;
+                  return (
+                    <button
+                      key={c.value}
+                      type="button"
+                      onClick={() => setInput((p) => ({ ...p, companion: c.value }))}
+                      className={cn(
+                        "flex min-h-[42px] items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-xs font-bold cursor-pointer transition-all",
+                        active
+                          ? "border-[#242424] bg-[#FFB4C2] text-[#242424]"
+                          : "border-[#242424]/14 bg-[#FFF8ED] text-[#242424] hover:bg-[#F6EBD8]"
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                      {c.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Activity */}
+            <div>
+              <p className="mb-2.5 font-display text-xs font-bold uppercase tracking-wider text-[#5C564F]">
+                4. Hoạt động mong muốn
+              </p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {ACTIVITIES.map((a) => {
+                  const Icon = a.icon;
+                  const active = input.activity === a.value;
+                  return (
+                    <button
+                      key={a.value}
+                      type="button"
+                      onClick={() => setInput((p) => ({ ...p, activity: a.value }))}
+                      className={cn(
+                        "flex min-h-[42px] items-center justify-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-bold cursor-pointer transition-all",
+                        active
+                          ? "border-[#242424] bg-[#FFD166] text-[#242424]"
+                          : "border-[#242424]/14 bg-[#FFF8ED] text-[#242424] hover:bg-[#F6EBD8]"
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                      {a.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Preferred Vibe */}
+            <div>
+              <label
+                htmlFor="random-vibe"
+                className="mb-2 block font-display text-xs font-bold uppercase tracking-wider text-[#5C564F]"
+              >
+                5. Vibe yêu thích
+              </label>
+              <Select
+                id="random-vibe"
+                value={input.vibe}
+                onChange={(e) => setInput((p) => ({ ...p, vibe: e.target.value }))}
+              >
+                <option value="all">Mọi vibe</option>
+                {vibes.map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            {/* Live Pool Indicator + Action */}
+            <div className="border-t border-[#242424]/10 pt-5">
+              <p className="mb-3 text-center text-xs font-semibold text-[#5C564F]">
+                Hiện có{" "}
+                <strong className="font-display text-sm font-extrabold text-[#D84B20]">
+                  {matchingPool.length.toLocaleString("vi-VN")}
+                </strong>{" "}
+                địa điểm phù hợp với lựa chọn của bạn
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="lg"
+                  onClick={handleGenerate}
+                  disabled={isSpinning}
+                  className="flex-1"
+                >
+                  <Dices
+                    className={cn("h-4 w-4", isSpinning && "animate-spin")}
+                    aria-hidden="true"
+                  />
+                  {isSpinning ? "Đang chọn kèo..." : result ? "Đổi gợi ý khác" : "Gợi ý cho tôi"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="soft"
+                  size="icon"
+                  onClick={resetAll}
+                  aria-label="Đặt lại lựa chọn"
+                  className="h-13 w-13"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Result Stage */}
+        <div className="flex flex-col lg:col-span-7">
+          <div className="flex flex-1 flex-col justify-center rounded-[26px] border border-[#242424]/14 bg-[#F6EBD8]/65 p-6 sm:p-8">
+            <AnimatePresence mode="wait">
+              {isSpinning ? (
+                <motion.div
+                  key="spinning"
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  className="flex flex-col items-center justify-center py-20 text-center"
+                >
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#FF7043] text-[#242424] shadow-lg">
+                    <RefreshCw className="h-7 w-7 animate-spin" aria-hidden="true" />
+                  </div>
+                  <p className="mt-5 font-display text-xs font-bold uppercase tracking-[0.18em] text-[#5C564F]">
+                    Đang quay số từ {matchingPool.length} địa điểm...
+                  </p>
+                  <p className="mt-2 font-display text-2xl font-extrabold text-[#242424] sm:text-3xl">
+                    {rollingName || "..."}
+                  </p>
+                </motion.div>
+              ) : result ? (
+                <motion.div
+                  key={result.place.id}
+                  initial={{ opacity: 0, y: 18, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden rounded-[22px] border border-[#242424]/14 bg-white shadow-sm"
+                >
+                  <div className="relative aspect-[16/9] w-full bg-[#F6EBD8]">
+                    <Image
+                      src={result.place.images[0] || "/images/places/food.jpg"}
+                      alt={result.place.name}
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 600px"
+                      className="object-cover"
+                    />
+                    <span className="absolute left-4 top-4 rounded-full bg-[#FFD166] px-3.5 py-1 font-display text-xs font-extrabold text-[#242424] shadow-sm">
+                      Kèo chốt cho bạn!
+                    </span>
+                    <span className="absolute bottom-4 left-4 rounded-full bg-[#242424]/85 px-3 py-1 text-xs font-semibold text-[#FFF8ED]">
+                      {formatPricePerPerson(getPricePerPerson(result.place))}
+                    </span>
+                  </div>
+
+                  <div className="p-6">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {result.place.category.map((cat) => (
+                        <span
+                          key={cat}
+                          className="rounded-lg bg-[#FFF8ED] border border-[#242424]/12 px-2.5 py-0.5 text-xs font-bold text-[#242424]"
+                        >
+                          {CATEGORY_LABELS[cat]}
+                        </span>
+                      ))}
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#5C564F]">
+                        <MapPin className="h-3.5 w-3.5 text-[#D84B20]" aria-hidden="true" />
+                        {result.place.province}
+                        {result.place.district && result.place.district !== result.place.province
+                          ? ` · ${result.place.district}`
+                          : ""}
+                      </span>
+                    </div>
+
+                    <h2 className="mt-3 font-display text-2xl font-extrabold text-[#242424] sm:text-3xl">
+                      {result.place.name}
+                    </h2>
+
+                    <p className="mt-2 text-sm leading-relaxed text-[#5C564F]">
+                      {result.place.description || result.place.address}
+                    </p>
+
+                    {/* Match Reasons */}
+                    <div className="mt-5 rounded-2xl border border-[#B7E4C7] bg-[#B7E4C7]/25 p-4">
+                      <p className="font-display text-xs font-extrabold uppercase tracking-wider text-[#1E5631]">
+                        Vì sao địa điểm này hợp với bạn
+                      </p>
+                      <ul className="mt-2 space-y-1.5">
+                        {result.reasons.map((reason, idx) => (
+                          <li
+                            key={idx}
+                            className="flex items-start gap-2 text-xs font-medium text-[#242424] sm:text-sm"
+                          >
+                            <CheckCircle2
+                              className="mt-0.5 h-4 w-4 shrink-0 text-[#1E5631]"
+                              aria-hidden="true"
+                            />
+                            <span>{reason}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="mt-6 flex flex-wrap items-center gap-3">
+                      <Link
+                        href={`/places/${result.place.id}`}
+                        className="inline-flex h-11 items-center gap-2 rounded-full bg-[#242424] px-5 font-display text-xs font-bold text-[#FFF8ED] transition-colors hover:bg-[#383532]"
+                      >
+                        Xem chi tiết địa điểm
+                        <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                      </Link>
+                      {result.place.menuUrl && (
+                        <MenuViewer
+                          placeName={result.place.name}
+                          menuUrl={result.place.menuUrl}
+                          variant="card"
+                          className="h-11 px-4"
+                        />
+                      )}
+                      <GoogleMapsActions place={result.place} size="md" />
+                    </div>
+                  </div>
+                </motion.div>
+              ) : hasSearched && matchingPool.length === 0 ? (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex flex-col items-center justify-center rounded-[22px] border border-[#242424]/12 bg-white px-6 py-16 text-center"
+                >
+                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#FFB4C2]/45 text-[#242424]">
+                    <Dices className="h-6 w-6" aria-hidden="true" />
+                  </span>
+                  <h2 className="mt-4 font-display text-xl font-extrabold text-[#242424]">
+                    Không có địa điểm nào khớp toàn bộ tiêu chí này
+                  </h2>
+                  <p className="mt-2 max-w-md text-sm text-[#5C564F]">
+                    HANGOUT VN chỉ gợi ý từ dữ liệu thật và không tự bịa quán.
+                    Bạn hãy thử mở rộng mức ngân sách hoặc đổi Vibe về &ldquo;Mọi vibe&rdquo; nhé!
+                  </p>
+                  <Button type="button" onClick={resetAll} className="mt-6">
+                    <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                    Đặt lại tiêu chí
+                  </Button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="idle"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex flex-col items-center justify-center py-16 text-center"
+                >
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full border border-[#242424]/15 bg-[#FFD166] text-[#242424]">
+                    <Dices className="h-9 w-9" aria-hidden="true" />
+                  </div>
+                  <h2 className="mt-5 font-display text-2xl font-extrabold text-[#242424]">
+                    Sẵn sàng chốt kèo chưa?
+                  </h2>
+                  <p className="mt-2 max-w-md text-sm text-[#5C564F]">
+                    Chỉnh bộ lọc bên trái theo ý bạn rồi bấm{" "}
+                    <strong className="text-[#242424]">&ldquo;Gợi ý cho tôi&rdquo;</strong> để
+                    nhận một tọa độ thật kèm lý do khớp gu và nút mở Google Maps ngay.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

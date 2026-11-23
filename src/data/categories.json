@@ -1,0 +1,56 @@
+[
+  {
+    "id": "food",
+    "name": "Ăn uống",
+    "englishName": "Food",
+    "tagline": "Từ hẻm ăn vặt bình dân đến quán ngon bản địa",
+    "accent": "#FF7043",
+    "image": "/images/places/vn-dishes/banh-mi-1.jpg",
+    "count": 1238
+  },
+  {
+    "id": "coffee",
+    "name": "Cà phê & Trà sữa",
+    "englishName": "Coffee",
+    "tagline": "Cà phê aesthetic, matcha chuẩn vị & góc chạy deadline",
+    "accent": "#FFD166",
+    "image": "/images/places/vn-dishes/cafe-chill-1.jpg",
+    "count": 282
+  },
+  {
+    "id": "date",
+    "name": "Hẹn hò",
+    "englishName": "Date",
+    "tagline": "Rooftop hoàng hôn, bistro ấm cúng & tọa độ lãng mạn",
+    "accent": "#FFB4C2",
+    "image": "/images/places/vn-dishes/rooftop-date-1.jpg",
+    "count": 149
+  },
+  {
+    "id": "chill",
+    "name": "Chill & Thư giãn",
+    "englishName": "Chill",
+    "tagline": "Sân vườn xanh mát, ven hồ gió lộng & acoustic tối",
+    "accent": "#B7E4C7",
+    "image": "/images/places/vn-dishes/cafe-san-vuon-1.jpg",
+    "count": 96
+  },
+  {
+    "id": "fun",
+    "name": "Vui chơi & Workshop",
+    "englishName": "Fun",
+    "tagline": "Làm gốm, nến thơm, photobooth, GoKart & trải nghiệm mới",
+    "accent": "#FFD166",
+    "image": "/images/places/vn-dishes/workshop-gom-nen-1.jpg",
+    "count": 66
+  },
+  {
+    "id": "travel",
+    "name": "Khám phá & Ngắm cảnh",
+    "englishName": "Travel",
+    "tagline": "Săn mây, phố đi bộ, bãi biển & check-in khắp 34 tỉnh thành",
+    "accent": "#FF7043",
+    "image": "/images/places/vn-dishes/san-may-nui-1.jpg",
+    "count": 64
+  }
+]
